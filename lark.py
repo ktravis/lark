@@ -34,6 +34,7 @@ class ParamVal(Val):
         self.type = 'pval'
         self.data = v
         self.cl = cl
+        self.as_str = "pval[{0}]".format(','.join(params))
         for r in refs:
             self.cl.incref(r)
         self.params = params

@@ -7,10 +7,11 @@ import larklex
 tokens = larklex.tokens
 
 precedence = (
+    ('left', 'PEVAL'),
+    ('left', 'EQ', 'GT', 'LT', 'GTE', 'LTE', 'INEQ'),
     ('left', 'PLUS', 'MINUS'),
     ('left', 'TIMES', 'DIVIDE'),
-    ('left', 'EQ', 'INEQ'),
-    ('right', 'UMINUS'),
+    # ('right', 'UMINUS'),
     ('right', 'NOT'),
 )
 
@@ -67,23 +68,27 @@ def p_primary_expression(p):
 def p_expression(p):
     '''expression : assignment
                   | conditional_expression
-                  | additive_expression
-                  | multiplicative_expression'''
+                  | additive_expression'''
     p[0] = p[1]
 
 def p_conditional_expression(p):
-    '''conditional_expression : if expression all else_ifs else all end
-                              | if expression all else all end
-                              | if expression all else_ifs end
-                              | if expression all end''' # should include "then" here?
-    if len(p) == 8:
-        p[0] = ('cond-else', p[2], ('group', p[3]), p[4], ('group', p[6]))
-    elif len(p) == 7:
-        p[0] = ('cond-else', p[2], ('group', p[3]), ('group', p[5]))
+    '''conditional_expression : if_start all else_ifs else all end
+                              | if_start all else all end
+                              | if_start all else_ifs end
+                              | if_start all end''' # should include "then" here?
+    if len(p) == 7:
+        p[0] = ('cond-else', p[1], ('group', p[2]), p[3], ('group', p[5]))
     elif len(p) == 6:
-        p[0] = ('cond', p[2], ('group', p[3]), p[4])
+        p[0] = ('cond-else', p[1], ('group', p[2]), ('group', p[4]))
+    elif len(p) == 5:
+        p[0] = ('cond', p[1], ('group', p[2]), p[3])
     else:
-        p[0] = ('cond', p[2], ('group', p[3]))
+        p[0] = ('cond', p[1], ('group', p[2]))
+
+def p_if_start(p):
+    '''if_start : if statement 
+                | if expression'''
+    p[0] = p[2]
 
 def p_else_ifs(p):
     '''else_ifs : else_ifs elif expression all
@@ -95,42 +100,54 @@ def p_else_ifs(p):
 
 
 def p_additive_expression(p):
-    '''additive_expression : additive_expression PLUS multiplicative_expression
-                           | additive_expression MINUS multiplicative_expression
-                           | multiplicative_expression'''
-    if len(p) > 2:
+    '''additive_expression : expression PLUS expression
+                           | expression MINUS expression
+                           | expression TIMES expression
+                           | expression DIVIDE expression
+                           | expression LT expression
+                           | expression EQ expression
+                           | expression GT expression
+                           | expression INEQ expression
+                           | expression LTE expression
+                           | expression GTE expression
+                           | MINUS primary_expression
+                           | NOT primary_expression
+                           | primary_expression'''
+    if len(p) == 4:
         p[0] = ('binary', p[2], p[1], p[3])
+    elif len(p) == 3:
+        p[0] = ('unary', p[1], p[2])
     else:
         p[0] = p[1]
 
-def p_multiplicative_expression(p):
-    '''multiplicative_expression : multiplicative_expression TIMES unary_expression
-                         | multiplicative_expression DIVIDE unary_expression
-                         | multiplicative_expression LT unary_expression
-                         | multiplicative_expression LTE unary_expression
-                         | multiplicative_expression GT unary_expression
-                         | multiplicative_expression GTE unary_expression
-                         | multiplicative_expression EQ unary_expression
-                         | multiplicative_expression INEQ unary_expression
-                         | unary_expression'''
-    if len(p) > 2:
-        p[0] = ('binary', p[2], p[1], p[3])
-    else:
-        p[0] = p[1]
+# def p_multiplicative_expression(p):
+    # '''multiplicative_expression : multiplicative_expression TIMES multiplicative_expression
+                         # | multiplicative_expression DIVIDE multiplicative_expression
+                         # | multiplicative_expression LT multiplicative_expression
+                         # | multiplicative_expression LTE multiplicative_expression
+                         # | multiplicative_expression GT multiplicative_expression
+                         # | multiplicative_expression GTE multiplicative_expression
+                         # | multiplicative_expression EQ multiplicative_expression
+                         # | multiplicative_expression INEQ multiplicative_expression
+                         # | unary_expression'''
+    # if len(p) > 3:
+        # p[0] = ('binary', p[2], p[1], p[3])
+    # else:
+        # p[0] = p[1]
 
 def p_assignment(p):
     '''assignment : ID ASSIGN expression'''
     p.parser.defs[-1].add(p[1])
     p[0] = ('assign', p[1], p[3])
 
-def p_unary_expression(p):
-    '''unary_expression : primary_expression
-                        | MINUS primary_expression %prec UMINUS
-                        | NOT primary_expression %prec NOT'''
-    if len(p) > 2:
-        p[0] = ('unary', p[1], p[2])
-    else:
-        p[0] = p[1]
+# def p_unary_expression(p):
+    # '''unary_expression : primary_expression
+                        # | MINUS primary_expression %prec UMINUS
+                        # | NOT primary_expression %prec NOT'''
+    # if len(p) > 2:
+        # p[0] = ('unary', p[1], p[2])
+    # else:
+        # p[0] = p[1]
 
 def p_param_val(p):
     '''param_val : LSQUARE param_names RSQUARE LCURLY clear_defs all RCURLY
@@ -165,7 +182,7 @@ def p_param_names(p):
         p[0].append(p[3])
 
 def p_evaluation(p):
-    '''evaluation : expression LSQUARE parameters RSQUARE
+    '''evaluation : primary_expression LSQUARE parameters RSQUARE %prec PEVAL
                   | ID'''
     if len(p) == 5:
         p[0] = ('param-eval', p[1], p[3])

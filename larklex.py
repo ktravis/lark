@@ -18,8 +18,8 @@ tokens = keywords + (
 t_ignore = ' \t'
 
 def t_comment(t):
-    r'\#.*$'
-    t.lexer.lineno += 1
+    r"[ ]*\043[^\n]*"  # \043 is '#'
+    pass
 
 def t_ID(t):
     r'[a-zA-Z_][a-zA-Z0-9_]*'
