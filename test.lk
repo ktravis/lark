@@ -1,7 +1,13 @@
-x = {
-    2
-    3
+add_n = [n]{
+    [a]{ a + n }
 }
+add_2 = add_n[2]
+add_neg1 = add_n[-1]
 
-x;
+x = if 1 < 0
+    'hi'
+else
+    'bai'
+end
 
+print[x]

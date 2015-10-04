@@ -5,22 +5,29 @@ class Val(object):
     def __init__(self, t, v=None):
         self.type = t
         self.data = v
+        self.as_str = str(v)
 
     def __call__(self, *args):
         return self
 
     def __str__(self):
-        return str(self.data)
+        return self.as_str
 
     def __repr__(self):
         return "val({0}, {1})".format(self.type, repr(self.data))
+
+    def __eq__(self, other):
+        return self.type == other.type and self.data == other.data
 
     def cleanup(self):
         pass
 
 nil = Val('niltype', None)
+nil.as_str = 'nil'
 true = Val('bool', True)
+true.as_str = 'true'
 false = Val('bool', False)
+false.as_str = 'false'
 
 class ParamVal(Val):
     def __init__(self, v=None, params=[], cl=None, refs=[]):
@@ -145,38 +152,12 @@ def next_addr():
     lastAddress += 1
     return a
 
-def fn_print(env, x):
-    print env.retrieve_val(x)
+def fn_print(env):
+    print env.retrieve_val(env.getref("x"))
     return nil
 
-def fn_add(env, a, b):
-    return Val('num', env.retrieve_val(a).data + env.retrieve_val(b).data)
-
-def fn_adder(env, a):
-    r = env.new_assign('n', env.retrieve_val(a))
-    def _fn(env, x):
-        return Val('num', env.retrieve_val(x).data + env.retrieve_val(r).data)
-    return ParamVal(_fn, params=['x'], cl=env, refs=[r])
-
 root = Env(memory=memory)
-# root.new_assign("x", Val('string', "hi"))
-
-# pprint = ParamVal(fn_print, params=['x'], cl=root)
-# pprint(Val('string', "hello world"))
-# pprint(root.retrieve_val(root.getref('x')))
-
-# padd = ParamVal(fn_add, params=['a', 'b'], cl=root)
-# pprint(padd(Val('num', 1), Val('num', 2)))
-
-# padder = ParamVal(fn_adder, params=['a'], cl=root)
-
-# padd_two = padder(Val('num', 2))
-# pprint(padd_two(Val('num', 5)))
-# pprint(padd_two(Val('num', 123)))
-
-# padd_three = padder(Val('num', 3))
-# pprint(padd_three(Val('num', 1)))
-# pprint(padd_two(Val('num', 123)))
+root.new_assign("print", ParamVal(fn_print, params=['x'], cl=root))
 
 def run_program(prog, env):
     last = None
@@ -235,6 +216,24 @@ def evaluate(expr, env):
         return env.assign(ref, evaluate(expr[2], env))
     elif t == 'primitive':
         return expr[1]
+    elif t == 'group': # should this have its own scope?
+        return run_program(expr[1], env)
+    elif t == 'cond-else':
+        if evaluate(expr[1], env) == true: # or should this be != false, != nil
+            return evaluate(expr[2], env)
+        elif len(expr) > 4:
+            for cond, body in expr[3]:
+                if evaluate(cond, env) == true:
+                    return evaluate(body, env)
+        return evaluate(expr[-1], env)
+    elif t == 'cond':
+        if evaluate(expr[1], env) == true: # or should this be != false, != nil
+            return evaluate(expr[2], env)
+        elif len(expr) > 3:
+            for cond, body in expr[3]:
+                if evaluate(cond, env) == true:
+                    return evaluate(body, env)
+        return nil
     elif t == 'pval':
         params = []
         if len(expr) == 3:
@@ -262,4 +261,4 @@ if __name__ == '__main__':
     from larkparse import parse
     with open(sys.argv[1], 'rb') as f:
         prog = parse(f.read())
-    print run_program(prog, root)
+    run_program(prog, root)

@@ -10,7 +10,6 @@ precedence = (
     ('left', 'PLUS', 'MINUS'),
     ('left', 'TIMES', 'DIVIDE'),
     ('left', 'EQ', 'INEQ'),
-    ('right', 'ASSIGN'),
     ('right', 'UMINUS'),
     ('right', 'NOT'),
 )
@@ -56,20 +55,44 @@ def p_program_error(p):
     p.parser.error = 1
 
 def p_primary_expression(p):
-    '''primary_expression : param_val
-                          | evaluation
+    '''primary_expression : evaluation
+                          | param_val
                           | primitive
-                          | LPAREN expression RPAREN'''
+                          | LPAREN all RPAREN'''
     if len(p) > 2:
-        p[0] = p[2]
+        p[0] = ('group', p[2])
     else:
         p[0] = p[1]
 
 def p_expression(p):
     '''expression : assignment
+                  | conditional_expression
                   | additive_expression
                   | multiplicative_expression'''
     p[0] = p[1]
+
+def p_conditional_expression(p):
+    '''conditional_expression : if expression all else_ifs else all end
+                              | if expression all else all end
+                              | if expression all else_ifs end
+                              | if expression all end''' # should include "then" here?
+    if len(p) == 8:
+        p[0] = ('cond-else', p[2], ('group', p[3]), p[4], ('group', p[6]))
+    elif len(p) == 7:
+        p[0] = ('cond-else', p[2], ('group', p[3]), ('group', p[5]))
+    elif len(p) == 6:
+        p[0] = ('cond', p[2], ('group', p[3]), p[4])
+    else:
+        p[0] = ('cond', p[2], ('group', p[3]))
+
+def p_else_ifs(p):
+    '''else_ifs : else_ifs elif expression all
+                | elif expression all'''
+    if len(p) == 6:
+        p[0] = p[1] + [(p[3], ('group', p[4]))]
+    else:
+        p[0] = [(p[2], ('group', p[3]))]
+
 
 def p_additive_expression(p):
     '''additive_expression : additive_expression PLUS multiplicative_expression
@@ -95,19 +118,10 @@ def p_multiplicative_expression(p):
     else:
         p[0] = p[1]
 
-# def p_assignment(p):
-    # '''assignment : id_assign expression'''
-    # p.parser.defs[-1].add(p[1])
-    # p[0] = ('assign', p[1], p[3])
-
 def p_assignment(p):
     '''assignment : ID ASSIGN expression'''
     p.parser.defs[-1].add(p[1])
     p[0] = ('assign', p[1], p[3])
-
-# def p_id_assign(p):
-    # '''id_assign : ID ASSIGN'''
-    # p[0] = p.parser.env.getlocal_ormakeref(p[1])
 
 def p_unary_expression(p):
     '''unary_expression : primary_expression
