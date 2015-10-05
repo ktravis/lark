@@ -13,3 +13,11 @@ print[x]
 set_x = [a] { ^x = a }
 set_x[2]
 print[x]
+make_counter = [n]{
+    a = n
+    { ^a = a + 1 } # last expression is returned
+}
+counter = make_counter[1]
+print[counter]
+print[counter]
+print[counter]
