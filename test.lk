@@ -25,3 +25,8 @@ print[counter]
 t = (1,'test')
 print[t.0]
 print[t.(x-1)]
+
+t.1 = 'notest'
+print[t.1]
+print[t.(x-2) = 200]
+print[t.0]

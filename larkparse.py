@@ -126,10 +126,14 @@ def p_additive_expression(p):
 
 def p_assignment(p):
     '''assignment : HAT ID ASSIGN expression
+                  | dot_op ASSIGN expression
                   | ID ASSIGN expression'''
     if len(p) == 4:
-        p.parser.defs[-1].add(p[1])
-        p[0] = ('assign', p[1], p[3])
+        if isinstance(p[1], basestring):
+            p.parser.defs[-1].add(p[1])
+            p[0] = ('assign', p[1], p[3])
+        else:
+            p[0] = ('member-assign', p[1], p[3])
     else:
         p.parser.refs[-1].add(p[2])
         p[0] = ('upval-assign', p[2], p[4])

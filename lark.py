@@ -21,8 +21,11 @@ class Val(object):
     def __eq__(self, other):
         return self.type == other.type and self.data == other.data
 
-    def dot(self, a):
-        raise Exception("No dot-acces for value of type '{0}'".format(self.type))
+    def getmember(self, a):
+        raise Exception("No dot-access for value of type '{0}'".format(self.type))
+
+    def setmember(self, a):
+        raise Exception("No dot-access for value of type '{0}'".format(self.type))
 
     def cleanup(self):
         pass
@@ -69,13 +72,24 @@ class Tuple(Val):
     def __str__(self):
         return '({0})'.format(','.join(str(d) for d in self.data))
 
-    def dot(self, a):
+    def getmember(self, a):
         if isinstance(a, Val):
             a = a.data
         if not isinstance(a, int):
             raise Exception("Cannot dot-access tuple with non-int member {0}".format(repr(a)))
         try:
             return self.data[a]
+        except IndexError:
+            raise Exception("Dot-access index for tuple is out of range: {0}".format(a))
+
+    def setmember(self, a, x):
+        if isinstance(a, Val):
+            a = a.data
+        if not isinstance(a, int):
+            raise Exception("Cannot dot-access tuple with non-int member {0}".format(repr(a)))
+        try:
+            self.data[a] = x
+            return x
         except IndexError:
             raise Exception("Dot-access index for tuple is out of range: {0}".format(a))
 
@@ -241,15 +255,22 @@ def evaluate(expr, env):
         return Tuple([evaluate(x, env) for x in expr[1]])
     elif t == 'dot':
         v = evaluate(expr[1], env)
-        return v.dot(expr[2])
+        return v.getmember(expr[2])
     elif t == 'indirect-dot':
         v = evaluate(expr[1], env)
-        return v.dot(evaluate(expr[2], env))
+        return v.getmember(evaluate(expr[2], env))
     elif t == 'upval-assign':
         if env.parent is None:
             raise Exception("Cannot set upval from root scope!")
         ref = env.parent.getref(expr[1])
         return env.assign(ref, evaluate(expr[2], env))
+    elif t == 'member-assign':
+        d = expr[1]
+        v = evaluate(d[1], env)
+        a = d[2]
+        if d[0] == 'indirect-dot':
+            a = evaluate(a, env)
+        return v.setmember(a, evaluate(expr[2], env)) # ref check?
     elif t == 'assign':
         ref = env.getlocal_ormakeref(expr[1])
         return env.assign(ref, evaluate(expr[2], env))
