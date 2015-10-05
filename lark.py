@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import sys
 
+from larkparse import parse
+
 class Val(object):
     def __init__(self, t, v=None):
         self.type = t
@@ -19,6 +21,9 @@ class Val(object):
     def __eq__(self, other):
         return self.type == other.type and self.data == other.data
 
+    def dot(self, a):
+        raise Exception("No dot-acces for value of type '{0}'".format(self.type))
+
     def cleanup(self):
         pass
 
@@ -35,7 +40,8 @@ class ParamVal(Val):
         self.data = v
         self.cl = cl
         self.as_str = "pval[{0}]".format(','.join(params))
-        for r in refs:
+        self.refs = refs
+        for r in self.refs:
             self.cl.incref(r)
         self.params = params
 
@@ -52,9 +58,29 @@ class ParamVal(Val):
         return ret
 
     def cleanup(self):
-        pass
+        for r in self.refs:
+            self.cl.decref(r)
 
-# class RefVal(Val):
+class Tuple(Val):
+    def __init__(self, v=[]):
+        self.type = 'tuple'
+        self.data = v
+
+    def __str__(self):
+        return '({0})'.format(','.join(str(d) for d in self.data))
+
+    def dot(self, a):
+        if isinstance(a, Val) and a.type == 'num':
+            try:
+                a = int(a.data)
+            except ValueError:
+                raise Exception("Invalid index access of tuple: {0}".format(a))
+        if not isinstance(a, int):
+            raise Exception("Cannot dot-access tuple with non-int member {0}".format(repr(a)))
+        try:
+            return self.data[a]
+        except IndexError:
+            raise Exception("Dot-access index for tuple is out of range: {0}".format(a))
 
 class Var(object):
     def __init__(self, val=nil):
@@ -88,6 +114,8 @@ class Env(object):
             else:
                 raise Exception("Must specify memory or parent when constructing Env.")
         self.vars = {}
+        # maybe put params in env property -- env.param(0), etc
+        # set when building pval, replace in parser with ('param', 0)
 
     def getref(self, name):
         r = self.vars.get(name, None)
@@ -212,6 +240,14 @@ def evaluate(expr, env):
         return x
     elif t == 'unary':
         return unary_expr(expr[1], expr[2], env)
+    elif t == 'tuple':
+        return Tuple([evaluate(x, env) for x in expr[1]])
+    elif t == 'dot':
+        v = evaluate(expr[1], env)
+        return v.dot(expr[2])
+    elif t == 'indirect-dot':
+        v = evaluate(expr[1], env)
+        return v.dot(evaluate(expr[2], env))
     elif t == 'upval-assign':
         if env.parent is None:
             raise Exception("Cannot set upval from root scope!")
@@ -221,7 +257,7 @@ def evaluate(expr, env):
         ref = env.getlocal_ormakeref(expr[1])
         return env.assign(ref, evaluate(expr[2], env))
     elif t == 'primitive':
-        return expr[1]
+        return Val(expr[1][0], expr[1][1])
     elif t == 'group': # should this have its own scope?
         return run_program(expr[1], env)
     elif t == 'cond-else':
@@ -264,7 +300,6 @@ def evaluate(expr, env):
 
 
 if __name__ == '__main__':
-    from larkparse import parse
     with open(sys.argv[1], 'rb') as f:
         prog = parse(f.read())
     run_program(prog, root)

@@ -1,7 +1,6 @@
 import sys
 from ply import *
 
-from lark import *
 import larklex
 
 tokens = larklex.tokens
@@ -58,6 +57,8 @@ def p_program_error(p):
 def p_primary_expression(p):
     '''primary_expression : evaluation
                           | param_val
+                          | dot_op
+                          | tuple
                           | primitive
                           | LPAREN all RPAREN'''
     if len(p) > 2:
@@ -142,6 +143,21 @@ def p_param_val(p):
         p[0] = ('pval', p[2], p[6], list(p.parser.refs.pop() - set(p[2])))
     p.parser.defs.pop()
 
+def p_dot_op(p):
+    '''dot_op : primary_expression DOT LPAREN expression RPAREN
+              | primary_expression DOT ID
+              | primary_expression DOT INTEGER'''
+    if len(p) == 6:
+        p[0] = ('indirect-dot', p[1], p[4])
+    else:
+        v = p[3]
+        try:
+            v = int(v)
+        except ValueError:
+            pass
+        p[0] = ('dot', p[1], v)
+
+
 def p_clear_defs(p):
     '''clear_defs :'''
     p.parser.refs.append(set())
@@ -185,11 +201,28 @@ def p_primitive(p):
 def p_numval(p):
     '''numval : INTEGER
               | FLOAT'''
-    p[0] = Val('num', eval(p[1]))
+    p[0] = ('num', eval(p[1]))
+
+def p_tuple(p):
+    '''tuple : LPAREN tuple_contents RPAREN
+             | LPAREN tuple_start RPAREN'''
+    p[0] = ('tuple', p[2])
+
+def p_tuple_contents(p):
+    '''tuple_contents : tuple_contents COMMA expression
+                      | tuple_start expression'''
+    if len(p) == 4:
+        p[0] = p[1] + [p[3]]
+    else:
+        p[0] = p[1] + [p[2]]
+
+def p_tuple_start(p):
+    '''tuple_start : expression COMMA'''
+    p[0] = [p[1]]
 
 def p_stringval(p):
     '''stringval : STRING'''
-    p[0] = Val('string', p[1])
+    p[0] = ('string', p[1])
 
 def p_boolval(p):
     '''boolval : true
@@ -209,7 +242,6 @@ def parse(data, debug=0):
     parser.error = 0
     parser.refs = [set()]
     parser.defs = [set()]
-    parser.env = root
     p = parser.parse(data, debug=debug)
     if parser.error:
         return None

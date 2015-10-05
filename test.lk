@@ -21,3 +21,7 @@ counter = make_counter[1]
 print[counter]
 print[counter]
 print[counter]
+
+t = (1,'test')
+print[t.0]
+print[t.(x-1)]
