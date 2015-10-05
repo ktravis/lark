@@ -33,4 +33,10 @@ counter = make_counter[0]
 print[counter] # 1
 print[counter] # 2
 print[counter] # 3
+
+t = (1,) # tuple
+t2 = (1, "hello world") # more tuple
+print[t.0] # 1
+i = 1
+print[t2.(i)] # hello world
 ```

@@ -70,11 +70,8 @@ class Tuple(Val):
         return '({0})'.format(','.join(str(d) for d in self.data))
 
     def dot(self, a):
-        if isinstance(a, Val) and a.type == 'num':
-            try:
-                a = int(a.data)
-            except ValueError:
-                raise Exception("Invalid index access of tuple: {0}".format(a))
+        if isinstance(a, Val):
+            a = a.data
         if not isinstance(a, int):
             raise Exception("Cannot dot-access tuple with non-int member {0}".format(repr(a)))
         try:
