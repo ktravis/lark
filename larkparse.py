@@ -65,6 +65,10 @@ def p_primary_expression(p):
     else:
         p[0] = p[1]
 
+def p_ref(p):
+    '''ref : HAT ID'''
+    p[0] = ('ref', p[2])
+
 def p_expression(p):
     '''expression : assignment
                   | conditional_expression
@@ -98,7 +102,6 @@ def p_else_ifs(p):
     else:
         p[0] = [(p[2], ('group', p[3]))]
 
-
 def p_additive_expression(p):
     '''additive_expression : expression PLUS expression
                            | expression MINUS expression
@@ -120,34 +123,15 @@ def p_additive_expression(p):
     else:
         p[0] = p[1]
 
-# def p_multiplicative_expression(p):
-    # '''multiplicative_expression : multiplicative_expression TIMES multiplicative_expression
-                         # | multiplicative_expression DIVIDE multiplicative_expression
-                         # | multiplicative_expression LT multiplicative_expression
-                         # | multiplicative_expression LTE multiplicative_expression
-                         # | multiplicative_expression GT multiplicative_expression
-                         # | multiplicative_expression GTE multiplicative_expression
-                         # | multiplicative_expression EQ multiplicative_expression
-                         # | multiplicative_expression INEQ multiplicative_expression
-                         # | unary_expression'''
-    # if len(p) > 3:
-        # p[0] = ('binary', p[2], p[1], p[3])
-    # else:
-        # p[0] = p[1]
-
 def p_assignment(p):
-    '''assignment : ID ASSIGN expression'''
-    p.parser.defs[-1].add(p[1])
-    p[0] = ('assign', p[1], p[3])
-
-# def p_unary_expression(p):
-    # '''unary_expression : primary_expression
-                        # | MINUS primary_expression %prec UMINUS
-                        # | NOT primary_expression %prec NOT'''
-    # if len(p) > 2:
-        # p[0] = ('unary', p[1], p[2])
-    # else:
-        # p[0] = p[1]
+    '''assignment : HAT ID ASSIGN expression
+                  | ID ASSIGN expression'''
+    if len(p) == 4:
+        p.parser.defs[-1].add(p[1])
+        p[0] = ('assign', p[1], p[3])
+    else:
+        p.parser.refs[-1].add(p[2])
+        p[0] = ('upval-assign', p[2], p[4])
 
 def p_param_val(p):
     '''param_val : LSQUARE param_names RSQUARE LCURLY clear_defs all RCURLY

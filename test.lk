@@ -7,13 +7,9 @@ fib = [n]{
         fib[n-2] + fib[n-1]
     end
 }
-print[fib[4]] # omg
-print[fib[5]]
-print[fib[6]]
-print[fib[7]]
 
-x = 1 + (if (3 < 2) 4 else # ok
-    1 end)
-y = x * 2
-print[x + y]
-print[y]
+x = 1
+print[x]
+set_x = [a] { ^x = a }
+set_x[2]
+print[x]

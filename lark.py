@@ -212,6 +212,11 @@ def evaluate(expr, env):
         return x
     elif t == 'unary':
         return unary_expr(expr[1], expr[2], env)
+    elif t == 'upval-assign':
+        if env.parent is None:
+            raise Exception("Cannot set upval from root scope!")
+        ref = env.parent.getref(expr[1])
+        return env.assign(ref, evaluate(expr[2], env))
     elif t == 'assign':
         ref = env.getlocal_ormakeref(expr[1])
         return env.assign(ref, evaluate(expr[2], env))
