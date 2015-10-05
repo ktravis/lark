@@ -9,8 +9,7 @@ tokens = keywords + (
      'EQ','INEQ','PLUS','MINUS','TIMES','DIVIDE',
      'LPAREN','RPAREN','LCURLY','RCURLY','LSQUARE','RSQUARE',
      'LT','LTE','GT','GTE',
-     'NOT','ASSIGN','HAT','DOT',
-     #'COMMA','SEMI',
+     'NOT','ASSIGN','HAT','DOT','COLON',
      'INTEGER','FLOAT', 'STRING',
      'ID','SEMI','NEWLINE','COMMA'
 )
@@ -30,6 +29,7 @@ def t_ID(t):
 t_ASSIGN  = r'='
 t_HAT     = r'\^'
 t_DOT     = r'\.'
+t_COLON   = r':'
 t_PLUS    = r'\+'
 t_MINUS   = r'-'
 t_TIMES   = r'\*'

@@ -30,3 +30,26 @@ t.1 = 'notest'
 print[t.1]
 print[t.(x-2) = 200]
 print[t.0]
+
+aa = (
+    test: 1, 
+    greet: [name] { 'hi ' + name }
+)
+
+greeter = [name]{
+    
+    (
+        greet: { 'hi ' + name }
+    )
+}
+
+dan_greeter = greeter['dan']
+fred_greeter = greeter['fred']
+print[dan_greeter.greet]
+
+
+aa.greet['fred']
+
+
+print[aa.test]
+print[aa.0]

@@ -65,9 +65,10 @@ class ParamVal(Val):
             self.cl.decref(r)
 
 class Tuple(Val):
-    def __init__(self, v=[]):
+    def __init__(self, v=[], named={}):
         self.type = 'tuple'
         self.data = v
+        self.named = named
 
     def __str__(self):
         return '({0})'.format(','.join(str(d) for d in self.data))
@@ -75,23 +76,38 @@ class Tuple(Val):
     def getmember(self, a):
         if isinstance(a, Val):
             a = a.data
-        if not isinstance(a, int):
-            raise Exception("Cannot dot-access tuple with non-int member {0}".format(repr(a)))
-        try:
-            return self.data[a]
-        except IndexError:
-            raise Exception("Dot-access index for tuple is out of range: {0}".format(a))
+        if isinstance(a, int):
+            try:
+                return self.data[a]
+            except IndexError:
+                raise Exception("Dot-access index for tuple is out of range: {0}".format(a))
+        elif isinstance(a, basestring):
+            try:
+                return self.named[a]
+            except KeyError:
+                raise Exception("Dot-access member '{0}' not in tuple".format(a))
+        else:
+            raise Exception("Cannot dot-access tuple with member {0}".format(repr(a)))
+
+    def length(self):
+        return len(self.data)
+
+    def labels(self):
+        return Tuple([Val('string', x) for x in self.named.keys()])
 
     def setmember(self, a, x):
         if isinstance(a, Val):
             a = a.data
-        if not isinstance(a, int):
+        if isinstance(a, int):
+            try:
+                self.data[a] = x
+                return x
+            except IndexError:
+                raise Exception("Dot-access index for tuple is out of range: {0}".format(a))
+        elif isinstance(a, basestring):
+            self.named[a] = x
+        else:
             raise Exception("Cannot dot-access tuple with non-int member {0}".format(repr(a)))
-        try:
-            self.data[a] = x
-            return x
-        except IndexError:
-            raise Exception("Dot-access index for tuple is out of range: {0}".format(a))
 
 class Var(object):
     def __init__(self, val=nil):
@@ -252,7 +268,22 @@ def evaluate(expr, env):
     elif t == 'unary':
         return unary_expr(expr[1], expr[2], env)
     elif t == 'tuple':
-        return Tuple([evaluate(x, env) for x in expr[1]])
+        members = []
+        named = {}
+        for x in expr[1]:
+            if x[0] == 'named-member':
+                mt, a = x[1]
+                if mt != 'member-label-literal':
+                    a = evaluate(a, env)
+                    if not (a.type == 'string' or a.type == 'num'):
+                        raise Exception("Cannot label member in tuple with value of type '{0}'".format(a.type))
+                    a = a.data
+                if a in named:
+                    raise Exception("Member '{0}' redefined in tuple literal".format(a))
+                named[a] = evaluate(x[2], env) 
+            else:
+                members.append(evaluate(x, env))
+        return Tuple(members, named=named)
     elif t == 'dot':
         v = evaluate(expr[1], env)
         return v.getmember(expr[2])

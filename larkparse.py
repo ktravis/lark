@@ -213,16 +213,32 @@ def p_tuple(p):
     p[0] = ('tuple', p[2])
 
 def p_tuple_contents(p):
-    '''tuple_contents : tuple_contents COMMA expression
-                      | tuple_start expression'''
+    '''tuple_contents : tuple_contents COMMA tuple_member
+                      | tuple_start tuple_member'''
     if len(p) == 4:
         p[0] = p[1] + [p[3]]
     else:
         p[0] = p[1] + [p[2]]
 
+def p_member_label(p):
+    '''member_label : LPAREN expression RPAREN
+                    | ID'''
+    if len(p) == 4:
+        p[0] = ('member-label', p[2])
+    else:
+        p[0] = ('member-label-literal', p[1])
+
 def p_tuple_start(p):
-    '''tuple_start : expression COMMA'''
+    '''tuple_start : tuple_member COMMA'''
     p[0] = [p[1]]
+
+def p_tuple_member(p):
+    '''tuple_member : member_label COLON expression
+                    | expression'''
+    if len(p) == 4:
+        p[0] = ('named-member', p[1], p[3])
+    else:
+        p[0] = p[1]
 
 def p_stringval(p):
     '''stringval : STRING'''
