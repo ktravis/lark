@@ -63,6 +63,7 @@ def t_STRING(t):
 def t_NEWLINE(t):
     r'\n+'
     t.lexer.lineno += len(t.value)
+    t.value = None
     return t
 
 def t_error(t):

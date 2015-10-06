@@ -16,7 +16,7 @@ precedence = (
 
 def p_all(p):
     '''all : program expression SEMI NEWLINE
-           | program expression SEMI 
+           | program expression SEMI
            | program expression NEWLINE
            | program expression
            | program
@@ -49,19 +49,28 @@ def p_statement(p):
                  | expression NEWLINE'''
     p[0] = p[1]
 
-def p_program_error(p):
-    '''program : error'''
-    p[0] = None
-    p.parser.error = 1
+# def p_program_error(p):
+    # '''program : error'''
+    # p[0] = None
+    # p.parser.error = 1
 
 def p_primary_expression(p):
     '''primary_expression : evaluation
                           | param_val
                           | dot_op
-                          | tuple
                           | primitive
+                          | LPAREN NEWLINE all NEWLINE RPAREN
+                          | LPAREN NEWLINE all RPAREN
+                          | LPAREN all NEWLINE RPAREN
                           | LPAREN all RPAREN'''
-    if len(p) > 2:
+    if len(p) == 6:
+        p[0] = ('group', p[3])
+    elif len(p) == 5:
+        if p[2] is None:
+            p[0] = ('group', p[3])
+        else:
+            p[0] = ('group', p[2])
+    elif len(p) == 4:
         p[0] = ('group', p[2])
     else:
         p[0] = p[1]
@@ -73,6 +82,7 @@ def p_ref(p):
 def p_expression(p):
     '''expression : assignment
                   | conditional_expression
+                  | tuple
                   | additive_expression'''
     p[0] = p[1]
 
@@ -91,7 +101,7 @@ def p_conditional_expression(p):
         p[0] = ('cond', p[1], ('group', p[2]))
 
 def p_if_start(p):
-    '''if_start : if statement 
+    '''if_start : if statement
                 | if expression'''
     p[0] = p[2]
 
@@ -168,7 +178,7 @@ def p_clear_defs(p):
     p.parser.defs.append(set())
 
 def p_parameters(p):
-    '''parameters : parameters COMMA expression
+    '''parameters : parameters tuple_sep expression
                   | expression'''
     if len(p) == 2:
         p[0] = [p[1]]
@@ -177,7 +187,7 @@ def p_parameters(p):
         p[0].append(p[3])
 
 def p_param_names(p):
-    '''param_names : param_names COMMA ID
+    '''param_names : param_names tuple_sep ID
                    | ID'''
     if len(p) == 2:
         p[0] = [p[1]]
@@ -208,20 +218,24 @@ def p_numval(p):
     p[0] = ('num', eval(p[1]))
 
 def p_tuple(p):
-    '''tuple : LPAREN tuple_contents RPAREN
-             | LPAREN tuple_start RPAREN'''
-    p[0] = ('tuple', p[2])
+    '''tuple : tuple_contents NEWLINE RPAREN
+             | tuple_contents RPAREN
+             | tuple_start NEWLINE RPAREN
+             | tuple_start RPAREN'''
+    p[0] = ('tuple', p[1])
 
 def p_tuple_contents(p):
-    '''tuple_contents : tuple_contents COMMA tuple_member
-                      | tuple_start tuple_member'''
+    '''tuple_contents : tuple_contents tuple_sep labelled_member
+                      | tuple_contents tuple_sep expression
+                      | tuple_start labelled_member
+                      | tuple_start expression'''
     if len(p) == 4:
         p[0] = p[1] + [p[3]]
     else:
         p[0] = p[1] + [p[2]]
 
 def p_member_label(p):
-    '''member_label : LPAREN expression RPAREN
+    '''member_label : LPAREN additive_expression RPAREN
                     | ID'''
     if len(p) == 4:
         p[0] = ('member-label', p[2])
@@ -229,16 +243,27 @@ def p_member_label(p):
         p[0] = ('member-label-literal', p[1])
 
 def p_tuple_start(p):
-    '''tuple_start : tuple_member COMMA'''
-    p[0] = [p[1]]
-
-def p_tuple_member(p):
-    '''tuple_member : member_label COLON expression
-                    | expression'''
-    if len(p) == 4:
-        p[0] = ('named-member', p[1], p[3])
+    '''tuple_start : LPAREN NEWLINE labelled_member tuple_sep
+                   | LPAREN NEWLINE expression tuple_sep
+                   | LPAREN labelled_member tuple_sep
+                   | LPAREN expression tuple_sep'''
+    if len(p) == 5:
+        p[0] = [p[3]]
     else:
-        p[0] = p[1]
+        p[0] = [p[2]]
+
+def p_labelled_member(p):
+    '''labelled_member : member_label COLON NEWLINE expression
+                    | member_label COLON expression'''
+    if len(p) == 5:
+        p[0] = ('named-member', p[1], p[4])
+    else:
+        p[0] = ('named-member', p[1], p[3])
+
+def p_tuple_sep(p): # optional newline
+    '''tuple_sep : tuple_sep NEWLINE
+                 | COMMA'''
+    p[0] = ','
 
 def p_stringval(p):
     '''stringval : STRING'''
@@ -254,7 +279,7 @@ def p_nilval(p):
     p[0] = nil
 
 def p_error(p):
-    print "Syntax error: {0}".format(p)
+    raise Exception("Syntax error: {0}".format(p))
 
 parser = yacc.yacc()
 

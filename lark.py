@@ -68,10 +68,12 @@ class Tuple(Val):
     def __init__(self, v=[], named={}):
         self.type = 'tuple'
         self.data = v
-        self.named = named
+        self.named = {str(k): v for k,v in named.items()}
 
     def __str__(self):
-        return '({0})'.format(','.join(str(d) for d in self.data))
+        return '({0})'.format(
+                ','.join([str(d) for d in self.data] + ['{0}:{1}'.format(k, str(v)) for k,v in self.named.items()])
+        )
 
     def getmember(self, a):
         if isinstance(a, Val):

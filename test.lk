@@ -22,7 +22,13 @@ print[counter]
 print[counter]
 print[counter]
 
-t = (1,'test')
+t = (
+    1,
+
+    'test'
+
+    )
+
 print[t.0]
 print[t.(x-1)]
 
@@ -32,24 +38,27 @@ print[t.(x-2) = 200]
 print[t.0]
 
 aa = (
-    test: 1, 
-    greet: [name] { 'hi ' + name }
+
+    test: 1,
+
+    greet:
+
+        [name] { 'hi ' + name }
 )
 
 greeter = [name]{
     
     (
-        greet: { 'hi ' + name }
+        greet: { 'hi ' + name },
     )
 }
 
-dan_greeter = greeter['dan']
-fred_greeter = greeter['fred']
-print[dan_greeter.greet]
-
-
-aa.greet['fred']
-
-
+print[aa.greet['fred']]
+print[aa.greet['joe']]
 print[aa.test]
-print[aa.0]
+
+x = (1, (
+     1;
+     2;
+     3;))
+print[x]
