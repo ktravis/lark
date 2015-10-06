@@ -30,6 +30,10 @@ class Val(object):
     def cleanup(self):
         pass
 
+    # primitives should not copy
+    def copy(self):
+        return self
+
 nil = Val('niltype', None)
 nil.as_str = 'nil'
 true = Val('bool', True)
@@ -54,7 +58,7 @@ class ParamVal(Val):
         ex = Env(parent=self.cl)
         refs = []
         for k,v in zip(self.params, args):
-            ex.new_assign(k, v)
+            ex.new_assign(k, v.copy())
         #return self.data(*refs)
         ret = self.data(ex)
         ex.cleanup()
@@ -63,6 +67,8 @@ class ParamVal(Val):
     def cleanup(self):
         for r in self.refs:
             self.cl.decref(r)
+
+    # needs copy? should closures copy? unclear
 
 class Tuple(Val):
     def __init__(self, v=[], named={}):
@@ -110,6 +116,11 @@ class Tuple(Val):
             self.named[a] = x
         else:
             raise Exception("Cannot dot-access tuple with non-int member {0}".format(repr(a)))
+
+    def copy(self):
+        d = [x.copy() for x in self.data]
+        n = {k:v.copy() for k,v in self.named.items()}
+        return Tuple(d, named=n)
 
 class Var(object):
     def __init__(self, val=nil):
@@ -227,6 +238,7 @@ def run_program(prog, env):
 def binary_expr(op, lhs, rhs, env):
     l = evaluate(lhs, env)
     r = evaluate(rhs, env)
+    # all of this is wrong
     if op == "+":
         return Val('num', l.data + r.data)
     elif op == "-":
@@ -308,6 +320,10 @@ def evaluate(expr, env):
         ref = env.getlocal_ormakeref(expr[1])
         return env.assign(ref, evaluate(expr[2], env))
     elif t == 'primitive':
+        if expr[1][0] == 'nil':
+            return nil
+        elif expr[1][0] == 'bool':
+            return true if expr[1][1] else false
         return Val(expr[1][0], expr[1][1])
     elif t == 'group': # should this have its own scope?
         return run_program(expr[1], env)

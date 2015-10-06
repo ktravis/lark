@@ -272,11 +272,11 @@ def p_stringval(p):
 def p_boolval(p):
     '''boolval : true
             | false'''
-    p[0] = true if p[1] == 'true' else false
+    p[0] = ('bool', True) if p[1] == 'true' else ('bool', False)
 
 def p_nilval(p):
     '''nilval : nil'''
-    p[0] = nil
+    p[0] = ('nil')
 
 def p_error(p):
     raise Exception("Syntax error: {0}".format(p))

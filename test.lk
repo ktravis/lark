@@ -62,3 +62,10 @@ x = (1, (
      2;
      3;))
 print[x]
+
+set_0 = [t]{ t.0 = false }
+
+a = (true, 'pineapple')
+print[a]
+set_0[a]
+print[a]
