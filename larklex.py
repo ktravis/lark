@@ -1,7 +1,8 @@
 from ply import *
 
 keywords = (
-    'if', 'then', 'else', 'elif', 'end', #'for','break','continue',
+    'if', 'then', 'else', 'elif', 'end',
+    'loop','break','continue',
     'true','false','nil'
 )
 

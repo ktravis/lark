@@ -82,6 +82,7 @@ def p_ref(p):
 def p_expression(p):
     '''expression : assignment
                   | conditional_expression
+                  | loop_expression
                   | tuple
                   | additive_expression'''
     p[0] = p[1]
@@ -99,6 +100,10 @@ def p_conditional_expression(p):
         p[0] = ('cond', p[1], ('group', p[2]), p[3])
     else:
         p[0] = ('cond', p[1], ('group', p[2]))
+
+def p_loop_expression(p):
+    '''loop_expression : loop expression all end'''
+    p[0] = ('loop', p[2], p[3])
 
 def p_if_start(p):
     '''if_start : if statement

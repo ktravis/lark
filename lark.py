@@ -336,6 +336,13 @@ def evaluate(expr, env):
     elif t == 'assign':
         ref = env.getlocal_ormakeref(expr[1])
         return env.assign(ref, evaluate(expr[2], env))
+    elif t == 'loop':
+        cond_expr = expr[1]
+        body = expr[2]
+        last = nil
+        while evaluate(cond_expr, env) != false:
+            last = run_program(body, env)
+        return last
     elif t == 'primitive':
         if expr[1] == 'nil':
             return nil
@@ -386,7 +393,7 @@ pairs = {
     '(': ')',
     '[': ']',
     '{': '}',
-    'if': 'end',
+    'if|loop': 'end',
 }
 
 if __name__ == '__main__':
@@ -405,7 +412,7 @@ if __name__ == '__main__':
             lines += l + '\n'
             partial = False
             for start,end in pairs.items():
-                if lines.count(start) != lines.count(end):
+                if sum(lines.count(s) for s in start.split('|')) != lines.count(end):
                     partial = True
                     break
             if not partial:
