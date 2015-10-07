@@ -3,6 +3,9 @@ import sys
 
 from larkparse import parse
 
+class LarkBreak(Exception): pass
+class LarkContinue(Exception): pass
+
 class Val(object):
     def __init__(self, t, v=None):
         self.type = t
@@ -229,7 +232,7 @@ root = Env(memory=memory)
 root.new_assign("print", ParamVal(fn_print, params=['x'], cl=root))
 
 def run_program(prog, env):
-    last = None
+    last = nil
     for expr in prog:
         if expr:
             last = evaluate(expr, env)
@@ -336,12 +339,21 @@ def evaluate(expr, env):
     elif t == 'assign':
         ref = env.getlocal_ormakeref(expr[1])
         return env.assign(ref, evaluate(expr[2], env))
+    elif t == 'break':
+        raise LarkBreak("Break outside of loop body!")
+    elif t == 'continue':
+        raise LarkContinue("Continue outside of loop body!")
     elif t == 'loop':
         cond_expr = expr[1]
         body = expr[2]
         last = nil
         while evaluate(cond_expr, env) != false:
-            last = run_program(body, env)
+            try:
+                last = run_program(body, env)
+            except LarkContinue:
+                continue
+            except LarkBreak: # should set last to nil maybe?
+                break
         return last
     elif t == 'primitive':
         if expr[1] == 'nil':

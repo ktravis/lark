@@ -105,6 +105,14 @@ def p_loop_expression(p):
     '''loop_expression : loop expression all end'''
     p[0] = ('loop', p[2], p[3])
 
+def p_break_statement(p):
+    '''expression : break'''
+    p[0] = ('break',)
+
+def p_continue_statement(p):
+    '''expression : continue'''
+    p[0] = ('continue',)
+
 def p_if_start(p):
     '''if_start : if statement
                 | if expression'''
