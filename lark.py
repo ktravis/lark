@@ -320,7 +320,7 @@ def evaluate(expr, env):
         ref = env.getlocal_ormakeref(expr[1])
         return env.assign(ref, evaluate(expr[2], env))
     elif t == 'primitive':
-        if expr[1][0] == 'nil':
+        if expr[1] == 'nil':
             return nil
         elif expr[1][0] == 'bool':
             return true if expr[1][1] else false
@@ -365,8 +365,36 @@ def evaluate(expr, env):
         args = [evaluate(a, env) for a in expr[2]]
         return v(*args)
 
+pairs = {
+    '(': ')',
+    '[': ']',
+    '{': '}',
+    'if': 'end',
+}
 
 if __name__ == '__main__':
-    with open(sys.argv[1], 'rb') as f:
-        prog = parse(f.read())
-    run_program(prog, root)
+    if len(sys.argv) > 1:
+        with open(sys.argv[1], 'rb') as f:
+            prog = parse(f.read())
+        run_program(prog, root)
+    else:
+        import readline
+
+        line = ""
+        partial = False
+        while True:
+            l = raw_input(".... " if partial else "lrk> ")
+            line += l + '\n'
+            partial = False
+            for start,end in pairs.items():
+                if line.count(start) != line.count(end):
+                    partial = True
+                    break
+            if not partial:
+                try:
+                    res = run_program(parse(line), root)
+                    if res != nil:
+                        print str(res)
+                except Exception as e:
+                    print e
+                line = ""
