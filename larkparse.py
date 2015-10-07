@@ -148,6 +148,21 @@ def p_assignment(p):
         p.parser.refs[-1].add(p[2])
         p[0] = ('upval-assign', p[2], p[4])
 
+def p_op_assign(p):
+    '''assignment : ID assignment_op expression
+                  | dot_op assignment_op expression'''
+    if isinstance(p[1], basestring):
+        if p[1] not in p.parser.defs[-1]:
+            p.parser.refs[-1].add(p[1])
+    p[0] = ('op-assign', p[2][0], p[1], p[3])
+
+def p_assignment_op(p):
+    '''assignment_op : PLUS_ASSIGN
+                     | MINUS_ASSIGN
+                     | TIMES_ASSIGN
+                     | DIVIDE_ASSIGN'''
+    p[0] = p[1]
+
 def p_param_val(p):
     '''param_val : LSQUARE param_names RSQUARE LCURLY clear_defs all RCURLY
                  | LCURLY clear_defs all RCURLY'''

@@ -54,7 +54,7 @@ class ParamVal(Val):
 
     def __call__(self, *args):
         if len(args) != len(self.params):
-            raise Exception("Not enough parameters")
+            raise Exception("Wrong number of parameters: expected {0}, got {1}".format(len(self.params), len(args)))
         ex = Env(parent=self.cl)
         refs = []
         for k,v in zip(self.params, args):
@@ -316,6 +316,23 @@ def evaluate(expr, env):
         if d[0] == 'indirect-dot':
             a = evaluate(a, env)
         return v.setmember(a, evaluate(expr[2], env)) # ref check?
+    elif t == 'op-assign':
+        op = expr[1]
+        rhs = evaluate(expr[3], env)
+        if isinstance(expr[2], basestring):
+            lhs_ref = env.getref(expr[2])
+            lhs = env.retrieve_val(lhs_ref)
+            newval = binary_expr(op, lhs, rhs, env)
+            return env.assign(lhs_ref, newval)
+        else:
+            d = expr[2]
+            v = evaluate(d[1], env)
+            a = d[2]
+            if d[0] == 'indirect-dot':
+                a = evaluate(a, env)
+            lhs = v.getmember(a)
+            newval = binary_expr(op, lhs, rhs, env)
+            return v.setmember(a, newval) # ref check?
     elif t == 'assign':
         ref = env.getlocal_ormakeref(expr[1])
         return env.assign(ref, evaluate(expr[2], env))
@@ -379,22 +396,25 @@ if __name__ == '__main__':
         run_program(prog, root)
     else:
         import readline
+        import traceback
 
-        line = ""
+        lines = ""
         partial = False
         while True:
             l = raw_input(".... " if partial else "lrk> ")
-            line += l + '\n'
+            lines += l + '\n'
             partial = False
             for start,end in pairs.items():
-                if line.count(start) != line.count(end):
+                if lines.count(start) != lines.count(end):
                     partial = True
                     break
             if not partial:
                 try:
-                    res = run_program(parse(line), root)
-                    if res != nil:
-                        print str(res)
-                except Exception as e:
-                    print e
-                line = ""
+                    prog = parse(lines)
+                    if prog:
+                        res = run_program(prog, root)
+                        if res != nil:
+                            print str(res)
+                except Exception:
+                    traceback.print_exc()
+                lines = ""
