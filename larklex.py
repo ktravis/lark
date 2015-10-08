@@ -7,7 +7,7 @@ keywords = (
 )
 
 tokens = keywords + (
-     'EQ','INEQ','PLUS','MINUS','TIMES','DIVIDE',
+     'EQ','INEQ','PLUS','MINUS','TIMES','DIVIDE','MOD',
      'LPAREN','RPAREN','LCURLY','RCURLY','LSQUARE','RSQUARE',
      'LT','LTE','GT','GTE',
      'NOT','HAT','DOT','COLON',
@@ -40,6 +40,7 @@ t_PLUS           = r'\+'
 t_MINUS          = r'-'
 t_TIMES          = r'\*'
 t_DIVIDE         = r'/'
+t_MOD            = r'%'
 t_LPAREN         = r'\('
 t_RPAREN         = r'\)'
 t_LSQUARE        = r'\['

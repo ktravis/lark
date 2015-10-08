@@ -2,6 +2,7 @@ import sys
 from ply import *
 
 import larklex
+from core import Val, nil, true, false
 
 tokens = larklex.tokens
 
@@ -131,6 +132,7 @@ def p_additive_expression(p):
                            | expression MINUS expression
                            | expression TIMES expression
                            | expression DIVIDE expression
+                           | expression MOD expression
                            | expression LT expression
                            | expression EQ expression
                            | expression GT expression
@@ -238,12 +240,15 @@ def p_primitive(p):
                  | stringval
                  | boolval
                  | nilval'''
-    p[0] = ('primitive', p[1])
+    p[0] = p[1]
 
-def p_numval(p):
-    '''numval : INTEGER
-              | FLOAT'''
-    p[0] = ('num', eval(p[1]))
+def p_int(p):
+    '''numval : INTEGER'''
+    p[0] = Val('int', eval(p[1]))
+
+def p_float(p):
+    '''numval : FLOAT'''
+    p[0] = Val('float', eval(p[1]))
 
 def p_tuple(p):
     '''tuple : tuple_contents NEWLINE RPAREN
@@ -295,16 +300,16 @@ def p_tuple_sep(p): # optional newline
 
 def p_stringval(p):
     '''stringval : STRING'''
-    p[0] = ('string', p[1])
+    p[0] = Val('string', p[1])
 
 def p_boolval(p):
     '''boolval : true
-            | false'''
-    p[0] = ('bool', True) if p[1] == 'true' else ('bool', False)
+               | false'''
+    p[0] = true if p[1] == 'true' else false
 
 def p_nilval(p):
     '''nilval : nil'''
-    p[0] = ('nil')
+    p[0] = nil
 
 def p_error(p):
     raise Exception("Syntax error: {0}".format(p))
