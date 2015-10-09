@@ -226,7 +226,7 @@ def p_param_names(p):
         p[0].append(p[3])
 
 def p_evaluation(p):
-    '''evaluation : primary_expression LSQUARE parameters RSQUARE %prec PEVAL
+    '''evaluation : primary_expression param_open parameters param_close %prec PEVAL
                   | ID'''
     if len(p) == 5:
         p[0] = ('param-eval', p[1], p[3])
@@ -234,6 +234,16 @@ def p_evaluation(p):
         if p[1] not in p.parser.defs[-1]:
             p.parser.refs[-1].add(p[1])
         p[0] = ('evaluation', p[1])
+
+def p_param_open(p):
+    '''param_open : param_open NEWLINE
+                  | LSQUARE'''
+    p[0] = p[1]
+
+def p_param_close(p):
+    '''param_close : NEWLINE param_close
+                   | RSQUARE'''
+    p[0] = ']'
 
 def p_primitive(p):
     '''primitive : numval
@@ -269,6 +279,7 @@ def p_tuple_contents(p):
 
 def p_member_label(p):
     '''member_label : LPAREN additive_expression RPAREN
+                    | STRING
                     | ID'''
     if len(p) == 4:
         p[0] = ('member-label', p[2])

@@ -119,13 +119,13 @@ class Tuple(Val):
         if isinstance(a, int):
             try:
                 self.data[a] = x
-                return x
             except IndexError:
                 raise Exception("Dot-access index for tuple is out of range: {0}".format(a))
         elif isinstance(a, basestring):
             self.named[a] = x
         else:
             raise Exception("Cannot dot-access tuple with non-int member {0}".format(repr(a)))
+        return x
 
     def copy(self):
         d = [x.copy() for x in self.data]

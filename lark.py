@@ -25,6 +25,11 @@ def _len(v):
     return Val('int', len(v.data))
 
 @larkfunction
+def _size(v):
+    assert (v.type == 'tuple')
+    return Val('int', len(v.data)+len(v.named))
+
+@larkfunction
 def _push(t, x):
     assert isinstance(t, Tuple)
     t.data.append(x)
@@ -98,7 +103,11 @@ def binary_tuple_ops(op, l, r):
     elif op == ">=":
         return true if len(l.data) >= len(r.data) else false
     else:
-        raise Exception("Operator '{0}' is not defined for types {1} and {2}.".format(op, l.type, r.type))
+        try:
+            fn = l.getmember(op) 
+            return fn(l, r)
+        except Exception:
+            raise Exception("Operator '{0}' is not defined for types {1} and {2}.".format(op, l.type, r.type))
 
 def binary_expr(op, lhs, rhs, env):
     l = evaluate(lhs, env)
