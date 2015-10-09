@@ -12,7 +12,6 @@ def larkfunction(fn):
     def wrapper(env):
         return fn(*[env.retrieve_val(env.getref(p)) for p in params])
     root.new_assign(name, ParamVal(wrapper, params=params, cl=root))
-    print name, params
     return wrapper
 
 @larkfunction
@@ -217,6 +216,10 @@ def evaluate(expr, env):
     elif t == 'assign':
         ref = env.getlocal_ormakeref(expr[1])
         return env.assign(ref, evaluate(expr[2], env))
+    elif t == 'return':
+        ret = LarkReturn("Return outside of pval.")
+        ret.value = expr[1]
+        raise ret
     elif t == 'break':
         raise LarkBreak("Break outside of loop body!")
     elif t == 'continue':
@@ -263,7 +266,11 @@ def evaluate(expr, env):
         return ParamVal(v=inner, params=params, cl=env, refs=refs)
     elif t == 'evaluation':
         v = env.retrieve_val(env.getref(expr[1]))
-        return v()
+        try:
+            ret = v()
+        except LarkReturn as e:
+            ret = e.value
+        return ret
     elif t == 'param-eval':
         p = expr[1]
         if p[0] == 'evaluation':
@@ -271,7 +278,11 @@ def evaluate(expr, env):
         else:
             v = evaluate(p, env)
         args = [evaluate(a, env) for a in expr[2]]
-        return v(*args)
+        try:
+            ret = v(*args)
+        except LarkReturn as e:
+            ret = e.value
+        return ret
 
 pairs = {
     '(': ')',

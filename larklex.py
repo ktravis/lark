@@ -2,7 +2,7 @@ from ply import *
 
 keywords = (
     'if', 'then', 'else', 'elif', 'end',
-    'loop','break','continue',
+    'loop','break','continue','return',
     'true','false','nil'
 )
 

@@ -110,6 +110,14 @@ def p_break_statement(p):
     '''expression : break'''
     p[0] = ('break',)
 
+def p_return_statement(p):
+    '''expression : return expression
+                  | return'''
+    if len(p) == 3:
+        p[0] = ('return', p[2])
+    else:
+        p[0] = ('return', nil)
+
 def p_continue_statement(p):
     '''expression : continue'''
     p[0] = ('continue',)

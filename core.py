@@ -1,3 +1,4 @@
+class LarkReturn(Exception): pass
 class LarkBreak(Exception): pass
 class LarkContinue(Exception): pass
 
