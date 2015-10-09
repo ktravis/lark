@@ -8,10 +8,11 @@ root = Env(memory=Mem())
 
 def larkfunction(fn):
     name = fn.func_name.lstrip('_')
-    params = fn.__code__.co_varnames
+    params = fn.__code__.co_varnames[:fn.__code__.co_argcount]
     def wrapper(env):
         return fn(*[env.retrieve_val(env.getref(p)) for p in params])
     root.new_assign(name, ParamVal(wrapper, params=params, cl=root))
+    print name, params
     return wrapper
 
 @larkfunction
@@ -34,6 +35,18 @@ def _push(t, x):
     assert isinstance(t, Tuple)
     t.data.append(x)
     return t
+
+@larkfunction
+def _keys(t):
+    assert isinstance(t, Tuple)
+    return Tuple([Val('string', k) for k in t.named.keys()])
+
+@larkfunction
+def _pairs(t):
+    assert isinstance(t, Tuple)
+    p = [Tuple([Val('int', i), v]) for i, v in enumerate(t.data)]
+    p += [Tuple([Val('string', k), v]) for k, v in t.named.items()]
+    return Tuple(p)
 
 @larkfunction
 def _type(v):
