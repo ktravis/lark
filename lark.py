@@ -4,13 +4,31 @@ import sys
 from larkparse import parse
 from core import *
 
-def fn_print(env):
-    print env.retrieve_val(env.getref("x"))
+root = Env(memory=Mem())
+
+def larkfunction(fn):
+    name = fn.func_name.lstrip('_')
+    params = fn.__code__.co_varnames
+    def wrapper(env):
+        return fn(*[env.retrieve_val(env.getref(p)) for p in params])
+    root.new_assign(name, ParamVal(wrapper, params=params, cl=root))
+    return wrapper
+
+@larkfunction
+def _print(x):
+    print x
     return nil
 
-memory = Mem()
-root = Env(memory=memory)
-root.new_assign("print", ParamVal(fn_print, params=['x'], cl=root))
+@larkfunction
+def _len(v):
+    assert (v.type in ['string', 'tuple'])
+    return Val('int', len(v.data))
+
+@larkfunction
+def _push(t, x):
+    assert isinstance(t, Tuple)
+    t.data.append(x)
+    return t
 
 def run_program(prog, env):
     last = nil
@@ -69,7 +87,9 @@ def evaluate(expr, env):
         members = []
         named = {}
         for x in expr[1]:
-            if x[0] == 'named-member':
+            if isinstance(x, Val):
+                members.append(x)
+            elif x[0] == 'named-member':
                 mt, a = x[1]
                 if mt != 'member-label-literal':
                     a = evaluate(a, env)
