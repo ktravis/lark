@@ -30,6 +30,10 @@ def _push(t, x):
     t.data.append(x)
     return t
 
+@larkfunction
+def _type(v):
+    return Val('string', v.type)
+
 def run_program(prog, env):
     last = nil
     for expr in prog:
@@ -37,18 +41,20 @@ def run_program(prog, env):
             last = evaluate(expr, env)
     return last
 
-def binary_expr(op, lhs, rhs, env):
-    l = evaluate(lhs, env)
-    r = evaluate(rhs, env)
-    # all of this is wrong
+def binary_num_ops(op, l, r):
+    assert r.type in ['int', 'float']
+    if l.type == 'float' or r.type == 'float':
+        out_type = 'float'
+    else:
+        out_type = 'int'
     if op == "+":
-        return Val('num', l.data + r.data)
+        v = l.data + r.data
     elif op == "-":
-        return Val('num', l.data - r.data)
+        v = l.data - r.data
     elif op == "*":
-        return Val('num', l.data * r.data)
+        v = l.data * r.data
     elif op == "/":
-        return Val('num', l.data / r.data)
+        v = l.data / r.data
     elif op == "<":
         return true if l.data < r.data else false
     elif op == ">":
@@ -57,16 +63,65 @@ def binary_expr(op, lhs, rhs, env):
         return true if l.data <= r.data else false
     elif op == ">=":
         return true if l.data >= r.data else false
-    elif op == "==":
+    return Val(out_type, v)
+
+def binary_string_ops(op, l, r):
+    if op == "+":
+        assert r.type == 'string'
+        v = l.data + r.data
+    elif op == "-":
+        raise Exception("Operator '-' is not defined for types {0} and {1}.".format(l.type, r.type))
+    elif op == "*":
+        raise Exception("Operator '*' is not defined for types {0} and {1}.".format(l.type, r.type))
+    elif op == "/":
+        return Tuple(l.data.split(r.data))
+    elif op == "<":
+        return true if l.data < r.data else false
+    elif op == ">":
+        return true if l.data > r.data else false
+    elif op == "<=":
+        return true if l.data <= r.data else false
+    elif op == ">=":
+        return true if l.data >= r.data else false
+    return Val('string', v)
+
+def binary_tuple_ops(op, l, r):
+    if op == "+":
+        assert r.type == 'tuple'
+        return Tuple(l.data + r.data, named=dict(l.named, **r.named))
+    elif op == "<":
+        return true if len(l.data) < len(r.data) else false
+    elif op == ">":
+        return true if len(l.data) > len(r.data) else false
+    elif op == "<=":
+        return true if len(l.data) <= len(r.data) else false
+    elif op == ">=":
+        return true if len(l.data) >= len(r.data) else false
+    else:
+        raise Exception("Operator '{0}' is not defined for types {1} and {2}.".format(op, l.type, r.type))
+
+def binary_expr(op, lhs, rhs, env):
+    l = evaluate(lhs, env)
+    r = evaluate(rhs, env)
+    if op == "==":
         return true if l.data == r.data else false
     elif op == "!=":
         return true if not (l.data == r.data) else false
 
+    if l.type in ['int', 'float']:
+        return binary_num_ops(op, l, r)
+    elif l.type == 'string':
+        return binary_string_ops(op, l, r)
+    elif l.type == 'tuple':
+        return binary_tuple_ops(op, l, r)
+    else:
+        raise Exception("Operator '{0}' is not defined for types {1} and {2}.".format(op, l.type, r.type))
+
 def unary_expr(op, v, env):
     v = evaluate(v, env)
     if op == '-':
-        assert v.type == 'num'
-        return Val('num', -v.data)
+        assert v.type in ['int', 'float']
+        return Val(v.type, -v.data)
     elif op == '!':
         if v == false or v == nil or not v.data:
             return true
@@ -93,7 +148,7 @@ def evaluate(expr, env):
                 mt, a = x[1]
                 if mt != 'member-label-literal':
                     a = evaluate(a, env)
-                    if not (a.type == 'string' or a.type == 'num'):
+                    if not (a.type == 'string' or a.type == 'int'):
                         raise Exception("Cannot label member in tuple with value of type '{0}'".format(a.type))
                     a = a.data
                 if a in named:

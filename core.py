@@ -20,9 +20,21 @@ class Val(object):
         return self.type == other.type and self.data == other.data
 
     def getmember(self, a):
+        if self.type == 'string':
+            if isinstance(a, Val):
+                a = a.data
+            if isinstance(a, int):
+                try:
+                    return Val('string', self.data[a])
+                except IndexError:
+                    raise Exception("Dot-access index for string is out of range: {0}".format(a))
+            else:
+                raise Exception("Cannot dot-access string with value {0}".format(repr(a)))
         raise Exception("No dot-access for value of type '{0}'".format(self.type))
 
-    def setmember(self, a):
+    def setmember(self, a, x):
+        if self.type == 'string':
+            raise Exception("Strings are immutable.")
         raise Exception("No dot-access for value of type '{0}'".format(self.type))
 
     def cleanup(self):
