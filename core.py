@@ -72,6 +72,7 @@ class ParamVal(Val):
         ex = Env(parent=self.cl)
         refs = []
         for k,v in zip(self.params, args):
+            # should refs be allowed as v for non-ref k?
             if isinstance(k, basestring):
                 ex.new_assign(k, v.copy())
             else:

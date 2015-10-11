@@ -51,6 +51,22 @@ def _pairs(t):
 def _type(v):
     return Val('string', v.type)
 
+def fn_dump(env):
+    names = {}
+    curr = env
+    for k,v in curr.vars.items():
+        names[v.addr] = k
+    while curr.parent is not None:
+        curr = env.parent
+        for k,v in curr.vars.items():
+            names[v.addr] = k
+
+    print '{{\n{0}\n}}'.format('\n'.join(
+        '\t{0:10s} => {1}'.format(names.get(k, k), v) for k,v in env.memory.slots.items()
+    ))
+    return nil
+root.new_assign("dump", ParamVal(fn_dump, cl=root))
+
 def run_program(prog, env):
     last = nil
     for expr in prog:
