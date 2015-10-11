@@ -78,6 +78,8 @@ def p_primary_expression(p):
 
 def p_ref(p):
     '''ref : HAT ID'''
+    if p[2] not in p.parser.defs[-1]:
+        p.parser.refs[-1].add(p[2])
     p[0] = ('ref', p[2])
 
 def p_expression(p):
@@ -217,6 +219,7 @@ def p_clear_defs(p):
 
 def p_parameters(p):
     '''parameters : parameters tuple_sep expression
+                  | ref
                   | expression'''
     if len(p) == 2:
         p[0] = [p[1]]
@@ -225,13 +228,20 @@ def p_parameters(p):
         p[0].append(p[3])
 
 def p_param_names(p):
-    '''param_names : param_names tuple_sep ID
+    '''param_names : param_names tuple_sep HAT ID
+                   | param_names tuple_sep ID
+                   | HAT ID
                    | ID'''
-    if len(p) == 2:
-        p[0] = [p[1]]
-    else:
+    if len(p) == 5:
+        p[0] = p[1]
+        p[0].append(('ref', p[4]))
+    elif len(p) == 4:
         p[0] = p[1]
         p[0].append(p[3])
+    elif len(p) == 3:
+        p[0] = [('ref', p[2])]
+    else:
+        p[0] = [p[1]]
 
 def p_evaluation(p):
     '''evaluation : primary_expression param_open parameters param_close %prec PEVAL

@@ -87,9 +87,9 @@ def binary_string_ops(op, l, r):
         assert r.type == 'string'
         v = l.data + r.data
     elif op == "-":
-        raise Exception("Operator '-' is not defined for types {0} and {1}.".format(l.type, r.type))
+        raise LarkException("Operator '-' is not defined for types {0} and {1}.".format(l.type, r.type))
     elif op == "*":
-        raise Exception("Operator '*' is not defined for types {0} and {1}.".format(l.type, r.type))
+        raise LarkException("Operator '*' is not defined for types {0} and {1}.".format(l.type, r.type))
     elif op == "/":
         return Tuple(l.data.split(r.data))
     elif op == "<":
@@ -103,6 +103,11 @@ def binary_string_ops(op, l, r):
     return Val('string', v)
 
 def binary_tuple_ops(op, l, r):
+    try:
+        fn = l.getmember(op) 
+        return fn(l, r)
+    except LarkException:
+        pass
     if op == "+":
         assert r.type == 'tuple'
         return Tuple(l.data + r.data, named=dict(l.named, **r.named))
@@ -115,11 +120,7 @@ def binary_tuple_ops(op, l, r):
     elif op == ">=":
         return true if len(l.data) >= len(r.data) else false
     else:
-        try:
-            fn = l.getmember(op) 
-            return fn(l, r)
-        except Exception:
-            raise Exception("Operator '{0}' is not defined for types {1} and {2}.".format(op, l.type, r.type))
+        raise LarkException("Operator '{0}' is not defined for types {1} and {2}.".format(op, l.type, r.type))
 
 def binary_expr(op, lhs, rhs, env):
     l = evaluate(lhs, env)
@@ -136,7 +137,7 @@ def binary_expr(op, lhs, rhs, env):
     elif l.type == 'tuple':
         return binary_tuple_ops(op, l, r)
     else:
-        raise Exception("Operator '{0}' is not defined for types {1} and {2}.".format(op, l.type, r.type))
+        raise LarkException("Operator '{0}' is not defined for types {1} and {2}.".format(op, l.type, r.type))
 
 def unary_expr(op, v, env):
     v = evaluate(v, env)
@@ -170,10 +171,10 @@ def evaluate(expr, env):
                 if mt != 'member-label-literal':
                     a = evaluate(a, env)
                     if not (a.type == 'string' or a.type == 'int'):
-                        raise Exception("Cannot label member in tuple with value of type '{0}'".format(a.type))
+                        raise LarkException("Cannot label member in tuple with value of type '{0}'".format(a.type))
                     a = a.data
                 if a in named:
-                    raise Exception("Member '{0}' redefined in tuple literal".format(a))
+                    raise LarkException("Member '{0}' redefined in tuple literal".format(a))
                 named[a] = evaluate(x[2], env) 
             else:
                 members.append(evaluate(x, env))
@@ -186,7 +187,7 @@ def evaluate(expr, env):
         return v.getmember(evaluate(expr[2], env))
     elif t == 'upval-assign':
         if env.parent is None:
-            raise Exception("Cannot set upval from root scope!")
+            raise LarkException("Cannot set upval from root scope!")
         ref = env.parent.getref(expr[1])
         return env.assign(ref, evaluate(expr[2], env))
     elif t == 'member-assign':
@@ -264,6 +265,8 @@ def evaluate(expr, env):
         refs = [env.getref(e) for e in expr[-1]]
         inner = lambda e: run_program(prog, e)
         return ParamVal(v=inner, params=params, cl=env, refs=refs)
+    elif t == 'ref':
+        return env.getref(expr[1])
     elif t == 'evaluation':
         v = env.retrieve_val(env.getref(expr[1]))
         try:
@@ -317,6 +320,6 @@ if __name__ == '__main__':
                         res = run_program(prog, root)
                         if res != nil:
                             print str(res)
-                except Exception:
+                except LarkException:
                     traceback.print_exc()
                 lines = ""

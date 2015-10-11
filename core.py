@@ -1,6 +1,7 @@
-class LarkReturn(Exception): pass
-class LarkBreak(Exception): pass
-class LarkContinue(Exception): pass
+class LarkException(Exception): pass
+class LarkReturn(LarkException): pass
+class LarkBreak(LarkException): pass
+class LarkContinue(LarkException): pass
 
 class Val(object):
     def __init__(self, t, v=None):
@@ -28,15 +29,15 @@ class Val(object):
                 try:
                     return Val('string', self.data[a])
                 except IndexError:
-                    raise Exception("Dot-access index for string is out of range: {0}".format(a))
+                    raise LarkException("Dot-access index for string is out of range: {0}".format(a))
             else:
-                raise Exception("Cannot dot-access string with value {0}".format(repr(a)))
-        raise Exception("No dot-access for value of type '{0}'".format(self.type))
+                raise LarkException("Cannot dot-access string with value {0}".format(repr(a)))
+        raise LarkException("No dot-access for value of type '{0}'".format(self.type))
 
     def setmember(self, a, x):
         if self.type == 'string':
-            raise Exception("Strings are immutable.")
-        raise Exception("No dot-access for value of type '{0}'".format(self.type))
+            raise LarkException("Strings are immutable.")
+        raise LarkException("No dot-access for value of type '{0}'".format(self.type))
 
     def cleanup(self):
         pass
@@ -57,7 +58,9 @@ class ParamVal(Val):
         self.type = 'pval'
         self.data = v
         self.cl = cl
-        self.as_str = "pval[{0}]".format(','.join(params))
+        self.as_str = "pval[{0}]".format(','.join(
+            p if isinstance(p, basestring) else '^{0}'.format(p[1]) for p in params
+        ))
         self.refs = refs
         for r in self.refs:
             self.cl.incref(r)
@@ -65,11 +68,17 @@ class ParamVal(Val):
 
     def __call__(self, *args):
         if len(args) != len(self.params):
-            raise Exception("Wrong number of parameters: expected {0}, got {1}".format(len(self.params), len(args)))
+            raise LarkException("Wrong number of parameters: expected {0}, got {1}".format(len(self.params), len(args)))
         ex = Env(parent=self.cl)
         refs = []
         for k,v in zip(self.params, args):
-            ex.new_assign(k, v.copy())
+            if isinstance(k, basestring):
+                ex.new_assign(k, v.copy())
+            else:
+                if k[0] == 'ref' and not isinstance(v, Ref):
+                    raise LarkException("Expected parameter '{0}' to be a reference.".format(k[1]))
+                ex.incref(v)
+                ex.vars[k[1]] = v
         #return self.data(*refs)
         ret = self.data(ex)
         ex.cleanup()
@@ -99,14 +108,14 @@ class Tuple(Val):
             try:
                 return self.data[a]
             except IndexError:
-                raise Exception("Dot-access index for tuple is out of range: {0}".format(a))
+                raise LarkException("Dot-access index for tuple is out of range: {0}".format(a))
         elif isinstance(a, basestring):
             try:
                 return self.named[a]
             except KeyError:
-                raise Exception("Dot-access member '{0}' not in tuple".format(a))
+                raise LarkException("Dot-access member '{0}' not in tuple".format(a))
         else:
-            raise Exception("Cannot dot-access tuple with member {0}".format(repr(a)))
+            raise LarkException("Cannot dot-access tuple with member {0}".format(repr(a)))
 
     def length(self):
         return len(self.data)
@@ -121,11 +130,11 @@ class Tuple(Val):
             try:
                 self.data[a] = x
             except IndexError:
-                raise Exception("Dot-access index for tuple is out of range: {0}".format(a))
+                raise LarkException("Dot-access index for tuple is out of range: {0}".format(a))
         elif isinstance(a, basestring):
             self.named[a] = x
         else:
-            raise Exception("Cannot dot-access tuple with non-int member {0}".format(repr(a)))
+            raise LarkException("Cannot dot-access tuple with non-int member {0}".format(repr(a)))
         return x
 
     def copy(self):
@@ -163,7 +172,7 @@ class Env(object):
             if parent is not None:
                 self.memory = parent.memory
             else:
-                raise Exception("Must specify memory or parent when constructing Env.")
+                raise LarkException("Must specify memory or parent when constructing Env.")
         self.vars = {}
         # maybe put params in env property -- env.param(0), etc
         # set when building pval, replace in parser with ('param', 0)
@@ -174,12 +183,12 @@ class Env(object):
             if self.parent is not None:
                 return self.parent.getref(name)
             else:
-                raise Exception("Could not find variable '{0}'.".format(name))
+                raise LarkException("Could not find variable '{0}'.".format(name))
         return r
 
     def makeref(self, name):
         if name in self.vars:
-            raise Exception("Variable '{0}' already defined in this scope.".format(name))
+            raise LarkException("Variable '{0}' already defined in this scope.".format(name))
         r = Ref(name, self.memory.next_addr())
         self.vars[name] = r
         self.memory[r.addr] = Var(nil)
@@ -210,13 +219,13 @@ class Env(object):
 
     def assign(self, ref, val):
         if ref.addr not in self.memory:
-            raise Exception
+            raise LarkException
         self.memory[ref.addr].val = val
         return val
 
     def retrieve_val(self, ref):
         if ref.addr not in self.memory:
-            raise Exception
+            raise LarkException
         return self.memory[ref.addr].val
 
     def cleanup(self):
