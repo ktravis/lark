@@ -57,6 +57,7 @@ def p_statement(p):
 
 def p_primary_expression(p):
     '''primary_expression : evaluation
+                          | extern_block
                           | param_val
                           | dot_op
                           | primitive
@@ -81,6 +82,14 @@ def p_ref(p):
     if p[2] not in p.parser.defs[-1]:
         p.parser.refs[-1].add(p[2])
     p[0] = ('ref', p[2])
+
+def p_extern_block(p):
+    '''extern_block : extern DOCSTRING'''
+    p[0] = ('extern', p[2])
+
+def p_extern_block(p):
+    '''extern_block : extern STRING'''
+    p[0] = ('extern-expr', p[2])
 
 def p_expression(p):
     '''expression : assignment
@@ -328,7 +337,8 @@ def p_tuple_sep(p): # optional newline
     p[0] = ','
 
 def p_stringval(p):
-    '''stringval : STRING'''
+    '''stringval : DOCSTRING
+                 | STRING'''
     p[0] = Val('string', p[1])
 
 def p_boolval(p):

@@ -37,8 +37,8 @@ def _push(t, x):
 
 @larkfunction
 def _keys(t):
-    assert isinstance(t, Tuple)
-    return Tuple([Val('string', k) for k in t.named.keys()])
+    assert hasattr(t, 'labels')
+    return t.labels()
 
 @larkfunction
 def _pairs(t):
@@ -66,6 +66,9 @@ def fn_dump(env):
     ))
     return nil
 root.new_assign("dump", ParamVal(fn_dump, cl=root))
+root.new_assign("thing", as_lark({'a': [1, 2], 'b': (2,), 'c': 3.14}))
+import requests
+root.new_assign("Session", PyVal(requests.Session))
 
 def run_program(prog, env):
     last = nil
@@ -233,6 +236,15 @@ def evaluate(expr, env):
     elif t == 'assign':
         ref = env.getlocal_ormakeref(expr[1])
         return env.assign(ref, evaluate(expr[2], env))
+    elif t == 'extern':
+        g = {} # instead want to persist globals
+        tmp = {}
+        exec (expr[1], g, tmp)
+        return as_lark(tmp)
+    elif t == 'extern-expr':
+        g = {} # instead want to persist globals
+        tmp = {}
+        return as_lark(eval(expr[1], g))
     elif t == 'return':
         ret = LarkReturn("Return outside of pval.")
         ret.value = expr[1]
@@ -309,6 +321,10 @@ pairs = {
     '{': '}',
     'if|loop': 'end',
 }
+even = [
+    '"""',
+    "'''",
+]
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:
@@ -327,6 +343,10 @@ if __name__ == '__main__':
             partial = False
             for start,end in pairs.items():
                 if sum(lines.count(s) for s in start.split('|')) != lines.count(end):
+                    partial = True
+                    break
+            for mark in even:
+                if (lines.count(mark) % 2) != 0:
                     partial = True
                     break
             if not partial:

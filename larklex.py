@@ -3,7 +3,7 @@ from ply import *
 keywords = (
     'if', 'then', 'else', 'elif', 'end',
     'loop','break','continue','return',
-    'true','false','nil'
+    'true','false','nil','extern'
 )
 
 tokens = keywords + (
@@ -12,7 +12,7 @@ tokens = keywords + (
      'LT','LTE','GT','GTE',
      'NOT','HAT','DOT','COLON',
      'ASSIGN','PLUS_ASSIGN','MINUS_ASSIGN','TIMES_ASSIGN','DIVIDE_ASSIGN',
-     'INTEGER','FLOAT', 'STRING',
+     'INTEGER','FLOAT', 'STRING','DOCSTRING',
      'ID','SEMI','NEWLINE','COMMA'
 )
 
@@ -58,6 +58,15 @@ t_COMMA          = r'\,'
 t_SEMI           = r';'
 t_INTEGER        = r'\d+'
 t_FLOAT          = r'((\d+\.\d+)(E[\+-]?\d+)?|([1-9]\d*E[\+-]?\d+))'
+
+def t_DOCSTRING(t):
+    # r'''(\"\"\"[^(?:\"\"\")]*\"\"\")|(\'\'\'[^(?:\'\'\')]*\'\'\')'''
+    r'''("""(?:[^"]|\\"|"{1,2}(?!"))*""")|(\'\'\'(?:[^']|\\'|'{1,2}(?!'))*\'\'\')'''
+    if t.value.startswith("'"):
+        t.value = t.value.strip("'")
+    else:
+        t.value = t.value.strip('"')
+    return t
 
 def t_STRING(t):
     r'(\".*?\")|(\'.*?\')'

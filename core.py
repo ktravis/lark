@@ -80,7 +80,6 @@ class ParamVal(Val):
                     raise LarkException("Expected parameter '{0}' to be a reference.".format(k[1]))
                 ex.incref(v)
                 ex.vars[k[1]] = v
-        #return self.data(*refs)
         ret = self.data(ex)
         ex.cleanup()
         return ret
@@ -90,6 +89,94 @@ class ParamVal(Val):
             self.cl.decref(r)
 
     # needs copy? should closures copy? unclear
+
+class PyVal(Val):
+    def __init__(self, obj):
+        self.type = 'py'
+        self.data = obj
+
+    def getmember(self, a):
+        if isinstance(a, Val):
+            a = a.data
+        if isinstance(a, int):
+            try:
+                return as_lark(self.data[a])
+            except IndexError:
+                raise LarkException("Dot-access index for tuple is out of range: {0}".format(a)) # TODO
+        elif isinstance(a, basestring):
+            try:
+                return as_lark(getattr(self.data, a))
+            except KeyError:
+                try:
+                    return as_lark(self.data[a])
+                except KeyError:
+                    raise LarkException("Dot-access member '{0}' not in tuple".format(a)) # TODO
+        else:
+            raise LarkException("Cannot dot-access tuple with member {0}".format(repr(a))) # TODO
+
+    def length(self):
+        return len(self.data)
+
+    def labels(self):
+        return Tuple([Val('string', x) for x in dir(self.data)])
+
+    def setmember(self, a, x):
+        if isinstance(a, Val):
+            a = a.data
+        if isinstance(a, int):
+            try:
+                self.data[a] = as_py(x)
+            except IndexError:
+                raise LarkException("Dot-access index for tuple is out of range: {0}".format(a))
+        elif isinstance(a, basestring):
+            # check for hasattr first?
+            setattr(self.named, a, as_py(x))
+        else:
+            raise LarkException("Cannot dot-access tuple with non-int member {0}".format(repr(a)))
+        return x
+
+    def __call__(self, *args):
+        if hasattr(self.data, '__call__'):
+            return as_lark(self.data.__call__(*map(as_py, args)))
+        return self
+
+    def __str__(self):
+        return str(self.data)
+
+    def __repr__(self):
+        return 'py({0})'.format(repr(self.data))
+
+    def __eq__(self, other):
+        return self.data == other.data
+
+
+def as_lark(obj):
+    if obj is None:
+        return nil
+    elif isinstance(obj, bool):
+        return true if obj else false
+    elif isinstance(obj, basestring):
+        return Val('string', obj)
+    elif isinstance(obj, int):
+        return Val('int', obj)
+    elif isinstance(obj, float):
+        return Val('float', obj)
+    elif isinstance(obj, tuple):
+        return Tuple([as_lark(o) for o in obj])
+    elif isinstance(obj, list):
+        return Tuple([as_lark(o) for o in obj])
+    elif isinstance(obj, dict):
+        return Tuple(named={k:as_lark(v) for k,v in obj.items()})
+    else:
+        return PyVal(obj)
+
+def as_py(val):
+    if isinstance(val, Tuple):
+        if val.named:
+            return {k:as_py(v) for k,v in val.named.items()}
+        else:
+            return [as_py(x) for x in val.data]
+    return val.data
 
 class Tuple(Val):
     def __init__(self, v=[], named={}):
