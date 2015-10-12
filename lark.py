@@ -5,6 +5,8 @@ from larkparse import parse
 from core import *
 
 root = Env(memory=Mem())
+extern_globals = {}
+extern_locals = {}
 
 def larkfunction(fn):
     name = fn.func_name.lstrip('_')
@@ -66,9 +68,6 @@ def fn_dump(env):
     ))
     return nil
 root.new_assign("dump", ParamVal(fn_dump, cl=root))
-root.new_assign("thing", as_lark({'a': [1, 2], 'b': (2,), 'c': 3.14}))
-import requests
-root.new_assign("Session", PyVal(requests.Session))
 
 def run_program(prog, env):
     last = nil
@@ -237,14 +236,10 @@ def evaluate(expr, env):
         ref = env.getlocal_ormakeref(expr[1])
         return env.assign(ref, evaluate(expr[2], env))
     elif t == 'extern':
-        g = {} # instead want to persist globals
-        tmp = {}
-        exec (expr[1], g, tmp)
-        return as_lark(tmp)
+        exec (expr[1], extern_globals, extern_locals)
+        return as_lark(extern_locals)
     elif t == 'extern-expr':
-        g = {} # instead want to persist globals
-        tmp = {}
-        return as_lark(eval(expr[1], g))
+        return as_lark(eval(expr[1], extern_globals, extern_locals))
     elif t == 'return':
         ret = LarkReturn("Return outside of pval.")
         ret.value = expr[1]

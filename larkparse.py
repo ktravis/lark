@@ -87,7 +87,7 @@ def p_extern_block(p):
     '''extern_block : extern DOCSTRING'''
     p[0] = ('extern', p[2])
 
-def p_extern_block(p):
+def p_extern_expr(p):
     '''extern_block : extern STRING'''
     p[0] = ('extern-expr', p[2])
 
