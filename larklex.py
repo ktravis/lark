@@ -3,7 +3,7 @@ from ply import *
 keywords = (
     'if', 'then', 'else', 'elif', 'end',
     'loop','break','continue','return',
-    'true','false','nil','extern'
+    'true','false','nil','extern','import'
 )
 
 tokens = keywords + (
@@ -60,7 +60,6 @@ t_INTEGER        = r'\d+'
 t_FLOAT          = r'((\d+\.\d+)(E[\+-]?\d+)?|([1-9]\d*E[\+-]?\d+))'
 
 def t_DOCSTRING(t):
-    # r'''(\"\"\"[^(?:\"\"\")]*\"\"\")|(\'\'\'[^(?:\'\'\')]*\'\'\')'''
     r'''("""(?:[^"]|\\"|"{1,2}(?!"))*""")|(\'\'\'(?:[^']|\\'|'{1,2}(?!'))*\'\'\')'''
     if t.value.startswith("'"):
         t.value = t.value.strip("'")
