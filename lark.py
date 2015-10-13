@@ -236,7 +236,7 @@ def evaluate(expr, env):
         ref = env.getlocal_ormakeref(expr[1])
         return env.assign(ref, evaluate(expr[2], env))
     elif t == 'extern':
-        exec (expr[1], extern_globals, extern_locals)
+        exec expr[1] in extern_globals, extern_locals
         return as_lark(extern_locals)
     elif t == 'extern-expr':
         return as_lark(eval(expr[1], extern_globals, extern_locals))
