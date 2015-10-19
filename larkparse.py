@@ -83,7 +83,7 @@ def p_primary_expression(p):
 
 def p_ref(p):
     '''ref : HAT identifier'''
-    if p[2][0] == 'ns' or p[2][1] not in p.parser.defs[-1]:
+    if '::' in p[2] or p[2] not in p.parser.defs[-1]:
         p.parser.refs[-1].add(p[2])
     p[0] = ('ref', p[2])
 
@@ -194,7 +194,7 @@ def p_assignment(p):
 def p_op_assign(p):
     '''assignment : identifier assignment_op expression
                   | dot_op assignment_op expression'''
-    if p[1][0] == 'ns' or p[1][1] not in p.parser.defs[-1]:
+    if '::' in p[1] or p[1] not in p.parser.defs[-1]:
         p.parser.refs[-1].add(p[1])
     p[0] = ('op-assign', p[2][0], p[1], p[3])
 
@@ -211,7 +211,7 @@ def p_param_val(p):
     if len(p) == 5:
         p[0] = ('pval', p[3], list(p.parser.refs.pop()))
     else:
-        p[0] = ('pval', p[2], p[6], list(p.parser.refs.pop() - set(p[2])))
+        p[0] = ('pval', p[2], p[6], list(p.parser.refs.pop()))
     p.parser.defs.pop()
 
 def p_dot_op(p):
@@ -252,11 +252,13 @@ def p_param_names(p):
     if len(p) == 5:
         p[0] = p[1]
         p[0].append(('ref', p[4]))
+        p.parser.defs[-1].add(p[4])
     elif len(p) == 4:
         p[0] = p[1]
         p[0].append(p[3])
     elif len(p) == 3:
         p[0] = [('ref', p[2])]
+        p.parser.defs[-1].add(p[2])
     else:
         p[0] = [p[1]]
 

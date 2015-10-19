@@ -330,11 +330,12 @@ def evaluate(expr, env):
         else:
             params = expr[1]
             prog = expr[2]
-        refs = [env.getref(e) for e in expr[-1] if e not in params]
+        param_names = [p if isinstance(p, basestring) else p[1] for p in params]
+        refs = [env.getref(e) for e in expr[-1] if e not in param_names]
         inner = lambda e: run_program(prog, e)
         return ParamVal(v=inner, params=params, cl=env, refs=refs)
     elif t == 'ref':
-        return evaluate(expr[1], env)
+        return env.getref(expr[1])
     elif t == 'evaluation':
         ref = env.getref(expr[1])
         v = env.retrieve_val(ref)
