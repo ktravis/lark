@@ -69,3 +69,7 @@ a = (true, 'pineapple')
 print[a]
 set_0[a]
 print[a]
+
+namespace hello {
+    world = true
+}

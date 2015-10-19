@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import os
 import sys
 
 from larkparse import parse
@@ -64,13 +65,45 @@ def fn_dump(env):
             names[v.addr] = k
 
     print '{{\n{0}\n}}'.format('\n'.join(
-        '\t{0:10s} => {1}'.format(names.get(k, k), v) for k,v in env.memory.slots.items()
+        '\t{0:10s} => {1}'.format(names.get(k, str(k)), v) for k,v in env.memory.slots.items()
     ))
     return nil
 root.new_assign("dump", ParamVal(fn_dump, cl=root))
 
-def import_file(name):
-    pass
+def parse_import_path(name):
+    parts = name.split('::')
+    path = None
+    while len(parts) > 0:
+        curr = parts[0]
+        parts = parts[1:]
+        last = path
+        if path is None:
+            path = curr
+        else:
+            path = '{0}/{1}'.format(path, curr)
+        if not os.path.isdir(path):
+            break
+    ns_name = curr
+    extensions = ['', '.lk', '.lrk', '.lark']
+    for ext in extensions:
+        if os.path.isfile('{0}{1}'.format(path, ext)):
+            return '{0}{1}'.format(path, ext), ns_name, parts
+    raise LarkException("Cannot import file at path '{0}'".format(path))
+
+def import_file(name, env):
+    path, ns_name, parts = parse_import_path(name)
+    try:
+        with open(path, 'rb') as f:
+            content = f.read()
+    except IOError as error:
+        raise LarkException(error.message)
+    ns = Env(parent=env)
+    last = run_program(parse(content), ns)
+    for n in parts:
+        ns = ns.get_ns(n)
+        ns_name = n
+    env.set_ns(ns_name, ns)
+    return last
 
 def run_program(prog, env):
     last = nil
@@ -270,7 +303,7 @@ def evaluate(expr, env):
                 break
         return last
     elif t == 'import':
-        env.set_ns(expr[1], import_file(expr[1]))
+        return import_file(expr[1], env)
     elif t == 'group': # should this have its own scope?
         return run_program(expr[1], env)
     elif t == 'cond-else':
