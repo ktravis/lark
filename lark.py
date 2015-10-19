@@ -97,7 +97,7 @@ def import_file(name, env):
             content = f.read()
     except IOError as error:
         raise LarkException(error.message)
-    ns = Env(parent=env)
+    ns = env.get_or_create_ns(ns_name)
     last = run_program(parse(content), ns)
     for n in parts:
         ns = ns.get_ns(n)
@@ -275,6 +275,7 @@ def evaluate(expr, env):
             ref = env.getlocal_ormakeref(expr[1])
         return env.assign(ref, evaluate(expr[2], env))
     elif t == 'namespace':
+        print "getting ns", expr[1]
         ns = env.get_or_create_ns(expr[1])
         return run_program(expr[2], ns)
     elif t == 'extern':
