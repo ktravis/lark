@@ -69,6 +69,9 @@ def fn_dump(env):
     return nil
 root.new_assign("dump", ParamVal(fn_dump, cl=root))
 
+def import_file(name):
+    pass
+
 def run_program(prog, env):
     last = nil
     for expr in prog:
@@ -218,12 +221,7 @@ def evaluate(expr, env):
     elif t == 'op-assign':
         op = expr[1]
         rhs = evaluate(expr[3], env)
-        if isinstance(expr[2], basestring):
-            lhs_ref = env.getref(expr[2])
-            lhs = env.retrieve_val(lhs_ref)
-            newval = binary_expr(op, lhs, rhs, env)
-            return env.assign(lhs_ref, newval)
-        else:
+        if expr[2] in ['dot', 'indirect-dot']:
             d = expr[2]
             v = evaluate(d[1], env)
             a = d[2]
@@ -232,9 +230,20 @@ def evaluate(expr, env):
             lhs = v.getmember(a)
             newval = binary_expr(op, lhs, rhs, env)
             return v.setmember(a, newval) # ref check?
+        else:
+            lhs_ref = env.getref(expr[2])
+            lhs = env.retrieve_val(lhs_ref)
+            newval = binary_expr(op, lhs, rhs, env)
+            return env.assign(lhs_ref, newval)
     elif t == 'assign':
-        ref = env.getlocal_ormakeref(expr[1])
+        if '::' in expr[1]:
+            ref= env.getref(expr[1])
+        else:
+            ref = env.getlocal_ormakeref(expr[1])
         return env.assign(ref, evaluate(expr[2], env))
+    elif t == 'namespace':
+        ns = env.get_or_create_ns(expr[1])
+        return run_program(expr[2], ns)
     elif t == 'extern':
         exec expr[1] in extern_globals, extern_locals
         return as_lark(extern_locals)
@@ -260,6 +269,8 @@ def evaluate(expr, env):
             except LarkBreak: # should set last to nil maybe?
                 break
         return last
+    elif t == 'import':
+        env.set_ns(expr[1], import_file(expr[1]))
     elif t == 'group': # should this have its own scope?
         return run_program(expr[1], env)
     elif t == 'cond-else':
@@ -285,13 +296,14 @@ def evaluate(expr, env):
         else:
             params = expr[1]
             prog = expr[2]
-        refs = [env.getref(e) for e in expr[-1]]
+        refs = [env.getref(e) for e in expr[-1] if e not in params]
         inner = lambda e: run_program(prog, e)
         return ParamVal(v=inner, params=params, cl=env, refs=refs)
     elif t == 'ref':
-        return env.getref(expr[1])
+        return evaluate(expr[1], env)
     elif t == 'evaluation':
-        v = env.retrieve_val(env.getref(expr[1]))
+        ref = env.getref(expr[1])
+        v = env.retrieve_val(ref)
         try:
             ret = v()
         except LarkReturn as e:
@@ -309,6 +321,7 @@ def evaluate(expr, env):
         except LarkReturn as e:
             ret = e.value
         return ret
+    return nil
 
 pairs = {
     '(': ')',

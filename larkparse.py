@@ -55,6 +55,10 @@ def p_statement(p):
     # p[0] = None
     # p.parser.error = 1
 
+def p_import_statement(p):
+    '''statement : import identifier'''
+    p[0] = ('import', p[2])
+
 def p_primary_expression(p):
     '''primary_expression : evaluation
                           | extern_block
@@ -78,10 +82,14 @@ def p_primary_expression(p):
         p[0] = p[1]
 
 def p_ref(p):
-    '''ref : HAT ID'''
-    if p[2] not in p.parser.defs[-1]:
+    '''ref : HAT identifier'''
+    if p[2][0] == 'ns' or p[2][1] not in p.parser.defs[-1]:
         p.parser.refs[-1].add(p[2])
     p[0] = ('ref', p[2])
+
+def p_namespace_block(p):
+    '''statement : namespace ID LCURLY all RCURLY'''
+    p[0] = ('namespace', p[2], p[4])
 
 def p_extern_block(p):
     '''extern_block : extern DOCSTRING'''
@@ -171,23 +179,23 @@ def p_additive_expression(p):
 def p_assignment(p):
     '''assignment : HAT ID ASSIGN expression
                   | dot_op ASSIGN expression
-                  | ID ASSIGN expression'''
+                  | identifier ASSIGN expression'''
     if len(p) == 4:
-        if isinstance(p[1], basestring):
-            p.parser.defs[-1].add(p[1])
-            p[0] = ('assign', p[1], p[3])
-        else:
+        if p[1][0] in ['dot', 'indirect-dot']:
             p[0] = ('member-assign', p[1], p[3])
+        else:
+            if '::' not in p[1]:
+                p.parser.defs[-1].add(p[1])
+            p[0] = ('assign', p[1], p[3])
     else:
         p.parser.refs[-1].add(p[2])
         p[0] = ('upval-assign', p[2], p[4])
 
 def p_op_assign(p):
-    '''assignment : ID assignment_op expression
+    '''assignment : identifier assignment_op expression
                   | dot_op assignment_op expression'''
-    if isinstance(p[1], basestring):
-        if p[1] not in p.parser.defs[-1]:
-            p.parser.refs[-1].add(p[1])
+    if p[1][0] == 'ns' or p[1][1] not in p.parser.defs[-1]:
+        p.parser.refs[-1].add(p[1])
     p[0] = ('op-assign', p[2][0], p[1], p[3])
 
 def p_assignment_op(p):
@@ -254,13 +262,21 @@ def p_param_names(p):
 
 def p_evaluation(p):
     '''evaluation : primary_expression param_open parameters param_close %prec PEVAL
-                  | ID'''
+                  | identifier'''
     if len(p) == 5:
         p[0] = ('param-eval', p[1], p[3])
     else:
-        if p[1] not in p.parser.defs[-1]:
+        if '::' in p[1] or p[1] not in p.parser.defs[-1]:
             p.parser.refs[-1].add(p[1])
         p[0] = ('evaluation', p[1])
+
+def p_identifier(p):
+    '''identifier : identifier NSSEP ID
+                  | ID'''
+    if len(p) == 4:
+        p[0] = '{0}::{1}'.format(p[1], p[3])
+    else:
+        p[0] = p[1]
 
 def p_param_open(p):
     '''param_open : param_open NEWLINE

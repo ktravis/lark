@@ -256,6 +256,7 @@ class Env(object):
     def __init__(self, memory=None, parent=None):
         self.memory = memory
         self.parent = parent
+        self.namespaces = {}
         if memory is None:
             if parent is not None:
                 self.memory = parent.memory
@@ -266,6 +267,10 @@ class Env(object):
         # set when building pval, replace in parser with ('param', 0)
 
     def getref(self, name):
+        if '::' in name:
+            n, rest = name.split('::', 1)
+            ns = self.get_ns(n)
+            return ns.getref(rest)
         r = self.vars.get(name, None)
         if r is None:
             if self.parent is not None:
@@ -291,6 +296,23 @@ class Env(object):
 
     def incref(self, ref):
         self.memory[ref.addr].refs += 1
+
+    def get_ns(self, ns):
+        if ns in self.namespaces:
+            return self.namespaces[ns]
+        elif self.parent is not None:
+            return self.parent.get_ns(ns)
+        raise LarkException("Unknown namespace '{0}'.".format(ns))
+
+    def get_or_create_ns(self, ns):
+        if ns in self.namespaces:
+            return self.namespaces[ns]
+        else:
+            return self.set_ns(ns, Env(parent=self))
+
+    def set_ns(self, ns, env):
+        self.namespaces[ns] = env
+        return env
 
     def decref(self, ref):
         n = self.memory[ref.addr].refs

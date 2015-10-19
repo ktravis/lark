@@ -2,7 +2,7 @@ from ply import *
 
 keywords = (
     'if', 'then', 'else', 'elif', 'end',
-    'loop','break','continue','return',
+    'namespace','loop','break','continue','return',
     'true','false','nil','extern','import'
 )
 
@@ -10,7 +10,7 @@ tokens = keywords + (
      'EQ','INEQ','PLUS','MINUS','TIMES','DIVIDE','MOD',
      'LPAREN','RPAREN','LCURLY','RCURLY','LSQUARE','RSQUARE',
      'LT','LTE','GT','GTE',
-     'NOT','HAT','DOT','COLON',
+     'NOT','HAT','DOT','COLON','NSSEP',
      'ASSIGN','PLUS_ASSIGN','MINUS_ASSIGN','TIMES_ASSIGN','DIVIDE_ASSIGN',
      'INTEGER','FLOAT', 'STRING','DOCSTRING',
      'ID','SEMI','NEWLINE','COMMA'
@@ -35,6 +35,7 @@ t_TIMES_ASSIGN   = r'\*='
 t_DIVIDE_ASSIGN  = r'/='
 t_HAT            = r'\^'
 t_DOT            = r'\.'
+t_NSSEP          = r'::'
 t_COLON          = r':'
 t_PLUS           = r'\+'
 t_MINUS          = r'-'
