@@ -14,6 +14,14 @@ Language running on python -- everything is a value, whatever that means.
 - explicit and unambiguous "references"
 
 
+## Getting Started
+
+```bash
+pip install ply
+./lark.py
+```
+
+
 ## Examples
 
 ```
