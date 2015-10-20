@@ -56,8 +56,12 @@ def p_statement(p):
     # p.parser.error = 1
 
 def p_import_statement(p):
-    '''statement : import identifier'''
-    p[0] = ('import', p[2])
+    '''statement : import identifier as ID
+                 | import identifier'''
+    if len(p) == 5:
+        p[0] = ('import-as', p[2], p[4])
+    else:
+        p[0] = ('import', p[2])
 
 def p_primary_expression(p):
     '''primary_expression : evaluation

@@ -90,7 +90,7 @@ def parse_import_path(name):
             return '{0}{1}'.format(path, ext), ns_name, parts
     raise LarkException("Cannot import file at path '{0}'".format(path))
 
-def import_file(name, env):
+def import_file(name, env, _as=None):
     path, ns_name, parts = parse_import_path(name)
     try:
         with open(path, 'rb') as f:
@@ -102,6 +102,8 @@ def import_file(name, env):
     for n in parts:
         ns = ns.get_ns(n)
         ns_name = n
+    if _as is not None:
+        ns_name = _as
     env.set_ns(ns_name, ns)
     return last
 
@@ -304,6 +306,8 @@ def evaluate(expr, env):
         return last
     elif t == 'import':
         return import_file(expr[1], env)
+    elif t == 'import-as':
+        return import_file(expr[1], env, _as=expr[2])
     elif t == 'group': # should this have its own scope?
         return run_program(expr[1], env)
     elif t == 'cond-else':

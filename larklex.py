@@ -1,7 +1,7 @@
 from ply import *
 
 keywords = (
-    'if', 'then', 'else', 'elif', 'end',
+    'if', 'then', 'else', 'elif', 'end','as',
     'namespace','loop','break','continue','return',
     'true','false','nil','extern','import'
 )
@@ -12,7 +12,7 @@ tokens = keywords + (
      'LT','LTE','GT','GTE',
      'NOT','HAT','DOT','COLON','NSSEP',
      'ASSIGN','PLUS_ASSIGN','MINUS_ASSIGN','TIMES_ASSIGN','DIVIDE_ASSIGN',
-     'INTEGER','FLOAT', 'STRING','DOCSTRING',
+     'INTEGER','FLOAT','STRING','DOCSTRING','EXTERN_BLOCK',
      'ID','SEMI','NEWLINE','COMMA'
 )
 
