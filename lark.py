@@ -402,6 +402,8 @@ if __name__ == '__main__':
                         res = run_program(prog, root)
                         if res != nil:
                             print str(res)
+                except SyntaxError as error:
+                    sys.stderr.write("SyntaxError: {0}\n".format(error.message))
                 except LarkException:
                     traceback.print_exc()
                 lines = ""

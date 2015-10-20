@@ -1,4 +1,5 @@
 class LarkException(Exception): pass
+class SyntaxError(LarkException): pass
 class LarkReturn(LarkException): pass
 class LarkBreak(LarkException): pass
 class LarkContinue(LarkException): pass

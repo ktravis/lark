@@ -2,7 +2,7 @@ import sys
 from ply import *
 
 import larklex
-from core import Val, nil, true, false
+from core import Val, nil, true, false, SyntaxError
 
 tokens = larklex.tokens
 
@@ -373,15 +373,20 @@ def p_nilval(p):
     p[0] = nil
 
 def p_error(p):
-    raise Exception("Syntax error: {0}".format(p))
+    lines = p.lexer.lexdata.split('\n')
+    col = len(p.lexer.lexdata[:p.lexpos].rsplit('\n')[-1])
+    line = "(l{0},c{1}) unexpected token {2}\n{3}\n{4}^".format(
+            p.lineno, col+1, p.type, lines[p.lineno-1], ' '*col)
+    raise SyntaxError(line)
 
 parser = yacc.yacc()
 
 def parse(data, debug=0):
+    larklex.lexer.lineno = 1
     parser.error = 0
     parser.refs = [set()]
     parser.defs = [set()]
-    p = parser.parse(data, debug=debug)
+    p = parser.parse(data, lexer=larklex.lexer, debug=debug)
     if parser.error:
         return None
     return p
