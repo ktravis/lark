@@ -5,6 +5,7 @@ Language running on python -- everything is a value, whatever that means.
 
 ## Features
 
+- python interoperability
 - reference counting (not complete yet, but close)
 - namespaces
 - closures
@@ -85,4 +86,7 @@ import test::nested # imports namespace "nested" from file test,
                    # or file "nested[.lk]" from folder 'test'
 
 nested::my_value = i
+
+extern """import sys"""
+input = extern "sys.stdin.readline().strip()"
 ```
