@@ -275,7 +275,6 @@ def evaluate(expr, env):
             ref = env.getlocal_ormakeref(expr[1])
         return env.assign(ref, evaluate(expr[2], env))
     elif t == 'namespace':
-        print "getting ns", expr[1]
         ns = env.get_or_create_ns(expr[1])
         return run_program(expr[2], ns)
     elif t == 'extern':
