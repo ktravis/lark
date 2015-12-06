@@ -82,6 +82,16 @@ loop true
     end
 end
 
+# default parameter values
+log = [msg="default used!"] { print["LOG: " + msg] }
+log['parameter provided'] # > LOG: parameter provided
+log # > LOG: default used!
+
+# default parameters must be at the end
+test = [a, b=1]{ a + b }
+test[1]    # > 2
+test[1, 2] # > 3
+
 namespace hello {
     namespace world {
         yes = true

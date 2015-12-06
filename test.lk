@@ -73,3 +73,7 @@ print[a]
 namespace hello {
     world = true
 }
+
+test = [a, b=[x]{ print[x] }]{ b[a] }
+test["I'm being printed"]
+print[test[(1, 2), [x]{ len[x] }]]
