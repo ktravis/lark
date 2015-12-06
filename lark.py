@@ -11,9 +11,9 @@ extern_locals = {}
 
 def larkfunction(fn):
     name = fn.func_name.lstrip('_')
-    params = fn.__code__.co_varnames[:fn.__code__.co_argcount]
+    params = [('param', x) for x in fn.__code__.co_varnames[:fn.__code__.co_argcount]]
     def wrapper(env):
-        return fn(*[env.retrieve_val(env.getref(p)) for p in params])
+        return fn(*[env.retrieve_val(env.getref(p[1])) for p in params])
     root.new_assign(name, ParamVal(wrapper, params=params, cl=root))
     return wrapper
 
@@ -53,6 +53,10 @@ def _pairs(t):
 @larkfunction
 def _type(v):
     return Val('string', v.type)
+
+@larkfunction
+def _assert(v):
+    return nil
 
 def fn_dump(env):
     names = {}
@@ -328,12 +332,22 @@ def evaluate(expr, env):
         return nil
     elif t == 'pval':
         params = []
+        param_names = []
         if len(expr) == 3:
             prog = expr[1]
         else:
-            params = expr[1]
+            for p in expr[1]:
+                if p[1] in param_names:
+                    raise LarkException("Duplicate parameter named '{0}'.".format(p[1]))
+                param_names.append(p[1])
+                if p[0] == 'ref':
+                    params.append(('ref', p[1], env.getref(p[2])))
+                elif p[0] == 'default':
+                    params.append(('default', p[1], evaluate(p[2], env)))
+                else:
+                    params.append(p)
             prog = expr[2]
-        param_names = [p if isinstance(p, basestring) else p[1] for p in params]
+                    
         refs = [env.getref(e) for e in expr[-1] if e not in param_names]
         inner = lambda e: run_program(prog, e)
         return ParamVal(v=inner, params=params, cl=env, refs=refs)

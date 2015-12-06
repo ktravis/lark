@@ -210,7 +210,7 @@ def p_assignment_op(p):
     p[0] = p[1]
 
 def p_param_val(p):
-    '''param_val : LSQUARE param_names RSQUARE LCURLY clear_defs all RCURLY
+    '''param_val : LSQUARE param_names_list RSQUARE LCURLY clear_defs all RCURLY
                  | LCURLY clear_defs all RCURLY'''
     if len(p) == 5:
         p[0] = ('pval', p[3], list(p.parser.refs.pop()))
@@ -248,23 +248,42 @@ def p_parameters(p):
         p[0] = p[1]
         p[0].append(p[3])
 
-def p_param_names(p):
-    '''param_names : param_names tuple_sep HAT ID
-                   | param_names tuple_sep ID
-                   | HAT ID
-                   | ID'''
-    if len(p) == 5:
-        p[0] = p[1]
-        p[0].append(('ref', p[4]))
-        p.parser.defs[-1].add(p[4])
-    elif len(p) == 4:
+def p_param_names_list(p):
+    '''param_names_list : param_names_with_defaults
+                        | param_names'''
+    p[0] = p[1]
+
+def p_param_names_with_defaults(p):
+    '''param_names_with_defaults : param_names_with_defaults tuple_sep default_param
+                                 | param_names tuple_sep default_param         
+                                 | default_param'''
+    if len(p) == 4:
         p[0] = p[1]
         p[0].append(p[3])
-    elif len(p) == 3:
-        p[0] = [('ref', p[2])]
-        p.parser.defs[-1].add(p[2])
     else:
         p[0] = [p[1]]
+
+def p_param_names(p):
+    '''param_names : param_names tuple_sep param_definition
+                   | param_definition'''
+    if len(p) == 4:
+        p[0] = p[1]
+        p[0].append(p[3])
+    else:
+        p[0] = [p[1]]
+
+def p_default_param(p):
+    '''default_param : ID ASSIGN primary_expression'''
+    p[0] = ('default', p[1], p[3])
+
+def p_param_definition(p):
+    '''param_definition : HAT ID
+                        | ID'''
+    if len(p) == 3:
+        p[0] = ('ref', p[2])
+        p.parser.defs[-1].add(p[2])
+    else:
+        p[0] = ('param', p[1])
 
 def p_evaluation(p):
     '''evaluation : primary_expression param_open parameters param_close %prec PEVAL

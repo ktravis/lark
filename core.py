@@ -17,7 +17,9 @@ class Val(object):
         return self.as_str
 
     def __repr__(self):
-        return "val({0}, {1})".format(self.type, repr(self.data))
+        if self.type == 'string':
+            return "'{0}'".format(self.as_str)
+        return self.as_str
 
     def __eq__(self, other):
         return self.type == other.type and self.data == other.data
@@ -58,29 +60,46 @@ class ParamVal(Val):
     def __init__(self, v=None, params=[], cl=None, refs=[]):
         self.type = 'pval'
         self.data = v
+        self.params = params
         self.cl = cl
-        self.as_str = "pval[{0}]".format(','.join(
-            p if isinstance(p, basestring) else '^{0}'.format(p[1]) for p in params
-        ))
+        str_params = []
+        self.min_args = len(self.params)
+        for i, p in enumerate(self.params):
+            if p[0] == "ref":
+                str_params.append("^{0}".format(p[1]))
+            elif p[0] == "default":
+                if i < self.min_args:
+                    self.min_args = i
+                str_params.append("{0}={1}".format(p[1], repr(p[2])))
+            else:
+                str_params.append(p[1])
+        self.as_str = "pval[{0}]".format(",".join(str_params))
         self.refs = refs
         for r in self.refs:
             self.cl.incref(r)
-        self.params = params
 
     def __call__(self, *args):
-        if len(args) != len(self.params):
-            raise LarkException("Wrong number of parameters: expected {0}, got {1}".format(len(self.params), len(args)))
+        if len(args) < self.min_args:
+            if len(self.params) != self.min_args:
+                raise LarkException("Wrong number of parameters: expected at least {0}, got {1}".format(self.min_args, len(args)))
+            else:
+                raise LarkException("Wrong number of parameters: expected {0}, got {1}".format(len(self.params), len(args)))
         ex = Env(parent=self.cl)
         refs = []
-        for k,v in zip(self.params, args):
+        for i,k in enumerate(self.params):
             # should refs be allowed as v for non-ref k?
-            if isinstance(k, basestring):
-                ex.new_assign(k, v.copy())
+            if i >= len(args):
+                assert k[0] == 'default'
+                ex.new_assign(k[1], k[2].copy())
             else:
-                if k[0] == 'ref' and not isinstance(v, Ref):
-                    raise LarkException("Expected parameter '{0}' to be a reference.".format(k[1]))
-                ex.incref(v)
-                ex.vars[k[1]] = v
+                v = args[i]
+                if k[0] == 'ref':
+                    if not isinstance(v, Ref):
+                        raise LarkException("Expected parameter '{0}' to be a reference.".format(k[1]))
+                    ex.incref(v)
+                    ex.vars[k[1]] = v
+                else:
+                    ex.new_assign(k[1], v.copy())
         ret = self.data(ex)
         ex.cleanup()
         return ret
