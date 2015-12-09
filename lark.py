@@ -312,6 +312,13 @@ def evaluate(expr, env):
         return import_file(expr[1], env)
     elif t == 'import-as':
         return import_file(expr[1], env, _as=expr[2])
+    elif t == 'extern-import':
+        basename = expr[1].split('.')[-1]
+        exec 'import {0}'.format(expr[1]) in extern_globals, extern_locals
+        module = Env(memory=env.memory)
+        for k, v in vars(extern_locals.get(basename)).items():
+            module.new_assign(k, as_lark(v))
+        env.set_ns(basename, module)
     elif t == 'group': # should this have its own scope?
         return run_program(expr[1], env)
     elif t == 'cond-else':
@@ -415,7 +422,7 @@ if __name__ == '__main__':
                     if prog:
                         res = run_program(prog, root)
                         if res != nil:
-                            print str(res)
+                            print repr(res)
                 except SyntaxError as error:
                     sys.stderr.write("SyntaxError: {0}\n".format(error.message))
                 except LarkException:

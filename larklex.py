@@ -76,6 +76,7 @@ def t_STRING(t):
         t.value = t.value.strip("'")
     else:
         t.value = t.value.strip('"')
+    t.value = t.value.decode("string_escape")
     return t
 
 def t_NEWLINE(t):

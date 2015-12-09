@@ -55,6 +55,10 @@ def p_statement(p):
     # p[0] = None
     # p.parser.error = 1
 
+def p_extern_import(p):
+    '''statement : extern import identifier'''
+    p[0] = ('extern-import', p[3])
+
 def p_import_statement(p):
     '''statement : import identifier as ID
                  | import identifier'''

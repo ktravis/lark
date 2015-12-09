@@ -18,7 +18,7 @@ class Val(object):
 
     def __repr__(self):
         if self.type == 'string':
-            return "'{0}'".format(self.as_str)
+            return repr(self.as_str) #"'{0}'".format(self.as_str)
         return self.as_str
 
     def __eq__(self, other):
@@ -208,6 +208,8 @@ class Tuple(Val):
         return '({0})'.format(
                 ','.join([str(d) for d in self.data] + ['{0}:{1}'.format(k, str(v)) for k,v in self.named.items()])
         )
+    def __repr__(self):
+        return self.__str__()
 
     def getmember(self, a):
         if isinstance(a, Val):
